@@ -2,8 +2,8 @@
 
 **Project Root:** D:\freelance-project\haseeb\bike-parts-system
 **Last Updated:** 2026-03-22
-**Current Phase:** Phase 2: Backend Core Setup
-**Completion:** 40%
+**Current Phase:** Phase 3: Backend Models and Controllers
+**Completion:** 48%
 
 ## Development Phases Status
 
@@ -13,24 +13,24 @@
 - DONE backend and frontend initialization
 - DONE docs and environment templates setup
 
-### Phase 2: Backend Core Setup In Progress
+### Phase 2: Backend Core Setup Completed
 - DONE Express app with security middleware
 - DONE MongoDB config with retry logic
-- DONE User model (hashing, role, active status, indexes)
-- DONE JWT auth middleware and role authorization helper
-- DONE Auth controller (register, login, me)
-- DONE Auth routes wired at /api/auth
-- DONE Winston logger setup and integration in server/error/database
-- DONE Seed script for admin, materials, products, machines, suppliers
-- DONE Seed executed successfully against live local MongoDB
-- DONE Baseline Jest/Supertest tests passing
-- PENDING add register/login success-path integration tests
+- DONE User model and JWT auth flow
+- DONE auth routes and protected profile endpoint
+- DONE logging and global error handling
+- DONE seed script with successful MongoDB seed execution
+- DONE baseline backend test suite passing
 
-### Phase 3: Backend Models and Controllers Pending
-- PARTIAL model files exist, core models implemented for auth/seed flow
-- PENDING implement detailed schemas for remaining modules
-- PENDING full CRUD controller logic for all modules
-- PENDING request validation coverage across module routes
+### Phase 3: Backend Models and Controllers In Progress
+- DONE Materials module implemented end-to-end:
+  - Material validators
+  - Material controller CRUD + pagination/filtering
+  - Material routes with auth and role authorization
+  - App route wiring: /api/materials
+  - Integration tests for create/list/update/auth-guard
+- DONE material update path adjusted for Mongoose v9 returnDocument option
+- PENDING implement remaining modules (production, utility, employee, inventory, sales, purchase, financial)
 
 ### Phase 4: Frontend Setup In Progress
 - DONE React app initialized
@@ -47,26 +47,29 @@
 
 ## Implementation Notes
 
-- Phase 2 backend auth foundation is functional and validated.
-- Auth endpoints currently available:
-  - POST /api/auth/register
-  - POST /api/auth/login
-  - GET /api/auth/me (Bearer token required)
-- Added `npm run seed` and validated seed inserts for admin and base entities.
-- Fixed Mongoose pre-save hook issue in User model that caused seed failure.
-- Backend tests currently pass locally via `npm test`.
+- Materials API endpoints now available:
+  - GET /api/materials
+  - GET /api/materials/:id
+  - POST /api/materials
+  - PUT /api/materials/:id
+  - DELETE /api/materials/:id
+- Role access policy:
+  - Read: authenticated users
+  - Create/Update: admin, manager
+  - Delete: admin only
+- Material tests pass against local MongoDB-backed flow.
 
 ## Next Steps
 
-1. Implement remaining model schemas (material usage, production, inventory, finance)
-2. Build material module CRUD controller and routes first
-3. Add Joi validators per route payload and query requirements
-4. Expand auth tests to include successful register/login token flows
-5. Wire frontend login/register screens with backend auth API
+1. Implement Production module model/controller/routes/validators/tests
+2. Implement Inventory module with stock movement linkage
+3. Add module-level API documentation in docs/API_DOCUMENTATION.md
+4. Add auth success-path coverage in auth tests (register/login assertions)
+5. Start frontend auth pages integration with backend auth API
 
 ## Known Issues
 
-- Most non-auth controllers/routes are still scaffold-only and need implementation.
+- Remaining module controllers/routes are scaffold-only and still require full CRUD implementation.
 
 ## References
 
