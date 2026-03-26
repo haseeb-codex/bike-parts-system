@@ -1,8 +1,8 @@
 import { memo, useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
 
-import type { DashboardPoint } from '@/components/Dashboard/charts/types';
 import '@/components/Dashboard/charts/chartSetup';
+import type { DashboardPoint } from './types';
 
 interface ProductionTrendChartProps {
   points: DashboardPoint[];
