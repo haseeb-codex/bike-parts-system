@@ -1,13 +1,39 @@
+:root {
+  --background: 36 33% 97%;
+  --foreground: 193 57% 14%;
+  --card: 0 0% 100%;
+  --card-foreground: 193 57% 14%;
+  --primary: 176 76% 29%;
+  --primary-foreground: 48 100% 96%;
+  --secondary: 186 26% 89%;
+  --secondary-foreground: 193 57% 14%;
+  --muted: 180 12% 92%;
+  --muted-foreground: 188 20% 38%;
+  --accent: 39 96% 48%;
+  --accent-foreground: 193 57% 14%;
+  --border: 181 15% 84%;
+  --input: 181 15% 84%;
+  --ring: 176 76% 29%;
+  --radius: 0.75rem;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top right, hsl(50 100% 94%), transparent 45%),
+    radial-gradient(circle at bottom left, hsl(177 44% 90%), transparent 40%),
+    hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: 'DM Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+#root {
+  min-height: 100vh;
 }
