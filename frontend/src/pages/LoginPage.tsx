@@ -1,14 +1,43 @@
-import { FormEvent, useState } from 'react';
-import { AxiosError } from 'axios';
+import { useEffect, useState } from 'react';
+import { AxiosError, isAxiosError } from 'axios';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { LoginForm } from '@/components/Auth/Login';
+import { ErrorToast } from '@/components/ui/error-toast';
 import { useAuth } from '@/hooks/useAuth';
+import type { LoginCredentials } from '@/types/auth';
 
 interface ApiErrorResponse {
   message?: string;
+}
+
+function mapLoginError(error: unknown): string {
+  if (!isAxiosError(error)) {
+    return 'Unable to sign in. Please try again.';
+  }
+
+  const apiError = error as AxiosError<ApiErrorResponse>;
+
+  const status = apiError.response?.status;
+  const backendMessage = apiError.response?.data?.message;
+
+  if (status === 400) {
+    return backendMessage || 'Please review your email and password format.';
+  }
+
+  if (status === 401) {
+    return backendMessage || 'Invalid email or password.';
+  }
+
+  if (status === 429) {
+    return backendMessage || 'Too many attempts. Please wait and try again.';
+  }
+
+  if (status && status >= 500) {
+    return 'Server error while signing in. Please try again shortly.';
+  }
+
+  return backendMessage || 'Unable to sign in with provided credentials.';
 }
 
 export default function LoginPage() {
@@ -16,77 +45,45 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [toastErrorMessage, setToastErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!toastErrorMessage) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setToastErrorMessage(null);
+    }, 4000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [toastErrorMessage]);
 
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setErrorMessage(null);
-    setIsSubmitting(true);
+  const handleSubmit = async (credentials: LoginCredentials, rememberMe: boolean) => {
+    setToastErrorMessage(null);
 
     try {
-      await login({ email, password });
+      await login(credentials, rememberMe);
       const destination = (location.state as { from?: { pathname?: string } } | null)?.from
         ?.pathname;
       navigate(destination || '/', { replace: true });
     } catch (error) {
-      const apiError = error as AxiosError<ApiErrorResponse>;
-      setErrorMessage(
-        apiError.response?.data?.message || 'Unable to sign in with provided credentials.'
-      );
-    } finally {
-      setIsSubmitting(false);
+      setToastErrorMessage(mapLoginError(error));
     }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4 py-8">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Sign in</CardTitle>
-          <CardDescription>Use your account to access bike parts operations.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="email">
-                Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="password">
-                Password
-              </label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-              />
-            </div>
-            {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
-            <Button className="w-full" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Signing in...' : 'Sign in'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      <LoginForm onSubmit={handleSubmit} />
+      {toastErrorMessage ? (
+        <ErrorToast message={toastErrorMessage} onClose={() => setToastErrorMessage(null)} />
+      ) : null}
     </div>
   );
 }

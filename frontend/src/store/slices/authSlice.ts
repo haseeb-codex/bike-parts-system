@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
+import { clearSession, getStoredToken, getStoredUserRaw } from '@/services/authService';
 import type { AuthState, AuthUser } from '@/types/auth';
 
 interface AuthPayload {
@@ -17,8 +18,8 @@ function getInitialAuthState(): AuthState {
     };
   }
 
-  const token = localStorage.getItem('token');
-  const userRaw = localStorage.getItem('user');
+  const token = getStoredToken();
+  const userRaw = getStoredUserRaw();
 
   if (!token || !userRaw) {
     return {
@@ -39,8 +40,7 @@ function getInitialAuthState(): AuthState {
       isAuthChecking: true,
     };
   } catch {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    clearSession();
 
     return {
       user: null,

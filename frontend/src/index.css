@@ -17,6 +17,24 @@
   --radius: 0.75rem;
 }
 
+.dark {
+  --background: 197 30% 10%;
+  --foreground: 180 27% 93%;
+  --card: 200 29% 13%;
+  --card-foreground: 180 27% 93%;
+  --primary: 172 72% 45%;
+  --primary-foreground: 198 31% 11%;
+  --secondary: 198 26% 20%;
+  --secondary-foreground: 180 27% 90%;
+  --muted: 197 22% 18%;
+  --muted-foreground: 182 16% 68%;
+  --accent: 40 95% 56%;
+  --accent-foreground: 198 31% 11%;
+  --border: 198 24% 26%;
+  --input: 198 24% 26%;
+  --ring: 172 72% 45%;
+}
+
 * {
   border-color: hsl(var(--border));
 }
@@ -32,6 +50,13 @@ body {
   font-family: 'DM Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.dark body {
+  background:
+    radial-gradient(circle at top right, hsl(198 40% 18%), transparent 45%),
+    radial-gradient(circle at bottom left, hsl(172 34% 20%), transparent 40%),
+    hsl(var(--background));
 }
 
 #root {

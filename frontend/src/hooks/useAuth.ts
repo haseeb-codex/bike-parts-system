@@ -59,9 +59,9 @@ export function useAuth() {
     runAuthBootstrap();
   }, [authState.token, dispatch]);
 
-  const login = async (credentials: LoginCredentials): Promise<void> => {
+  const login = async (credentials: LoginCredentials, rememberMe = true): Promise<void> => {
     const session = await authService.login(credentials);
-    authService.saveSession(session.user, session.token);
+    authService.saveSession(session.user, session.token, rememberMe);
     dispatch(setCredentials(session));
   };
 

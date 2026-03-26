@@ -17,14 +17,33 @@ interface MeData {
   user: AuthUser;
 }
 
-export function saveSession(user: AuthUser, token: string): void {
-  localStorage.setItem('token', token);
-  localStorage.setItem('user', JSON.stringify(user));
+const TOKEN_KEY = 'token';
+const USER_KEY = 'user';
+
+function getStorage(rememberMe: boolean): Storage {
+  return rememberMe ? localStorage : sessionStorage;
+}
+
+export function getStoredToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+}
+
+export function getStoredUserRaw(): string | null {
+  return localStorage.getItem(USER_KEY) || sessionStorage.getItem(USER_KEY);
+}
+
+export function saveSession(user: AuthUser, token: string, rememberMe = true): void {
+  clearSession();
+  const storage = getStorage(rememberMe);
+  storage.setItem(TOKEN_KEY, token);
+  storage.setItem(USER_KEY, JSON.stringify(user));
 }
 
 export function clearSession(): void {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(USER_KEY);
 }
 
 export async function login(credentials: LoginCredentials): Promise<LoginData> {
