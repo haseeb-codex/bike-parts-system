@@ -1,15 +1,18 @@
 import { BrowserRouter } from 'react-router-dom';
 
+import { LanguageProvider } from '@/i18n/LanguageProvider';
 import { ThemeProvider } from '@/components/Theme/ThemeProvider';
 import AppRoutes from '@/routes/AppRoutes';
 
 function App() {
   return (
-    <ThemeProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </ThemeProvider>
+    <LanguageProvider>
+      <ThemeProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </ThemeProvider>
+    </LanguageProvider>
   );
 }
 

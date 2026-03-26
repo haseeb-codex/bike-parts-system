@@ -3,8 +3,10 @@ import { Outlet } from 'react-router-dom';
 
 import { Navbar } from '@/components/Layout/Navbar';
 import { Sidebar } from '@/components/Layout/Sidebar';
+import { useI18n } from '@/i18n/LanguageProvider';
 
 export function Layout() {
+  const { isRtl } = useI18n();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     if (typeof window === 'undefined') {
@@ -31,7 +33,17 @@ export function Layout() {
         onCloseMobile={() => setMobileSidebarOpen(false)}
       />
 
-      <div className={sidebarCollapsed ? 'md:pl-20' : 'md:pl-72'}>
+      <div
+        className={
+          isRtl
+            ? sidebarCollapsed
+              ? 'md:pr-20'
+              : 'md:pr-72'
+            : sidebarCollapsed
+              ? 'md:pl-20'
+              : 'md:pl-72'
+        }
+      >
         <Navbar onOpenSidebar={() => setMobileSidebarOpen(true)} />
         <main className="pb-8">
           <Outlet />

@@ -2,8 +2,14 @@ import { Menu, Moon, Settings, Sun, UserCircle2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
+import arFlag from '@/assets/flags/sa.svg';
+import enFlag from '@/assets/flags/gb.svg';
+import nlFlag from '@/assets/flags/nl.svg';
+import urFlag from '@/assets/flags/pk.svg';
 import { useTheme } from '@/components/Theme/ThemeProvider';
 import { useAuth } from '@/hooks/useAuth';
+import { useI18n } from '@/i18n/LanguageProvider';
+import type { SupportedLanguage } from '@/i18n/translations';
 import { Button } from '@/components/ui/button';
 
 interface NavbarProps {
@@ -11,15 +17,29 @@ interface NavbarProps {
 }
 
 const ROUTE_TITLES: Record<string, string> = {
-  '/': 'Dashboard',
-  '/materials': 'Materials',
-  '/production': 'Production',
-  '/inventory': 'Inventory',
-  '/sales': 'Sales',
-  '/employees': 'Employees',
-  '/financial': 'Financial',
-  '/utilities': 'Utilities',
-  '/account': 'Account Settings',
+  '/': 'route.dashboard',
+  '/materials': 'route.materials',
+  '/production': 'route.production',
+  '/inventory': 'route.inventory',
+  '/sales': 'route.sales',
+  '/employees': 'route.employees',
+  '/financial': 'route.financial',
+  '/utilities': 'route.utilities',
+  '/account': 'route.account',
+};
+
+const LANGUAGE_FLAGS: Record<SupportedLanguage, string> = {
+  en: enFlag,
+  nl: nlFlag,
+  ur: urFlag,
+  ar: arFlag,
+};
+
+const LANGUAGE_FLAG_ALT: Record<SupportedLanguage, string> = {
+  en: 'English',
+  nl: 'Dutch',
+  ur: 'Urdu',
+  ar: 'Arabic',
 };
 
 function getInitials(name?: string) {
@@ -31,17 +51,25 @@ function getInitials(name?: string) {
 
 export function Navbar({ onOpenSidebar }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const languageMenuRef = useRef<HTMLDivElement | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
+  const { isRtl, language, languageOptions, setLanguage, t } = useI18n();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (!menuRef.current) return;
-      if (event.target instanceof Node && !menuRef.current.contains(event.target)) {
+      if (!(event.target instanceof Node)) return;
+
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
         setMenuOpen(false);
+      }
+
+      if (languageMenuRef.current && !languageMenuRef.current.contains(event.target)) {
+        setLanguageMenuOpen(false);
       }
     };
 
@@ -49,7 +77,7 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
     return () => window.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const currentTitle = ROUTE_TITLES[location.pathname] || 'Operations';
+  const currentTitle = t(ROUTE_TITLES[location.pathname] || 'route.dashboard', 'Dashboard');
 
   const handleSignout = () => {
     logout();
@@ -66,20 +94,80 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
           </Button>
           <div>
             <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              Control Panel
+              {t('common.controlPanel', 'Control Panel')}
             </p>
             <h1 className="text-lg font-semibold text-foreground">{currentTitle}</h1>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
+          <div className="relative" ref={languageMenuRef}>
+            <button
+              type="button"
+              onClick={() => setLanguageMenuOpen((open) => !open)}
+              className="inline-flex h-10 min-w-10 items-center justify-center rounded-md border border-input bg-background px-2 text-base hover:bg-secondary"
+              aria-label={t('common.language', 'Language')}
+              title={t('common.language', 'Language')}
+            >
+              <img
+                src={LANGUAGE_FLAGS[language]}
+                alt={`${LANGUAGE_FLAG_ALT[language]} flag`}
+                className="h-4 w-6 rounded-[2px] object-cover"
+              />
+            </button>
+
+            {languageMenuOpen ? (
+              <div
+                className={[
+                  'absolute mt-2 w-52 rounded-xl border border-border/80 bg-card p-2 shadow-lg',
+                  isRtl ? 'left-0' : 'right-0',
+                ].join(' ')}
+              >
+                <p className="px-2 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  {t('common.language', 'Language')}
+                </p>
+                {languageOptions.map((option) => (
+                  <button
+                    key={option.code}
+                    type="button"
+                    className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm hover:bg-secondary"
+                    onClick={() => {
+                      setLanguage(option.code);
+                      setLanguageMenuOpen(false);
+                    }}
+                  >
+                    <span className="flex items-center gap-2">
+                      <img
+                        src={LANGUAGE_FLAGS[option.code]}
+                        alt={`${LANGUAGE_FLAG_ALT[option.code]} flag`}
+                        className="h-4 w-6 rounded-[2px] object-cover"
+                      />
+                      <span>{option.label}</span>
+                    </span>
+                    {language === option.code ? (
+                      <span className="text-xs text-primary">●</span>
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
           <Button
             variant="outline"
             size="icon"
             type="button"
             onClick={toggleTheme}
-            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={
+              theme === 'dark'
+                ? t('common.switchToLight', 'Switch to light mode')
+                : t('common.switchToDark', 'Switch to dark mode')
+            }
+            title={
+              theme === 'dark'
+                ? t('common.switchToLight', 'Switch to light mode')
+                : t('common.switchToDark', 'Switch to dark mode')
+            }
           >
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
@@ -93,9 +181,9 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
               <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
                 {getInitials(user?.name)}
               </span>
-              <span className="hidden text-left sm:block">
+              <span className={isRtl ? 'hidden text-right sm:block' : 'hidden text-left sm:block'}>
                 <span className="block text-sm font-medium leading-tight">
-                  {user?.name || 'User'}
+                  {user?.name || t('common.user', 'User')}
                 </span>
                 <span className="block text-xs text-muted-foreground">
                   {user?.role || 'operator'}
@@ -104,11 +192,18 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
             </button>
 
             {menuOpen ? (
-              <div className="absolute right-0 mt-2 w-64 rounded-xl border border-border/80 bg-card p-2 shadow-lg">
+              <div
+                className={[
+                  'absolute mt-2 w-64 rounded-xl border border-border/80 bg-card p-2 shadow-lg',
+                  isRtl ? 'left-0' : 'right-0',
+                ].join(' ')}
+              >
                 <div className="px-2 py-2">
-                  <p className="text-sm font-semibold text-foreground">{user?.name || 'User'}</p>
+                  <p className="text-sm font-semibold text-foreground">
+                    {user?.name || t('common.user', 'User')}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    {user?.email || 'No email available'}
+                    {user?.email || t('common.unknownEmail', 'No email available')}
                   </p>
                 </div>
                 <div className="my-1 h-px bg-border" />
@@ -118,7 +213,7 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
                   to="/account"
                 >
                   <UserCircle2 className="h-4 w-4" />
-                  Account Settings
+                  {t('common.accountSettings', 'Account Settings')}
                 </Link>
                 <button
                   className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-secondary"
@@ -126,7 +221,7 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
                   type="button"
                 >
                   <Settings className="h-4 w-4" />
-                  Preferences
+                  {t('common.preferences', 'Preferences')}
                 </button>
                 <div className="my-1 h-px bg-border" />
                 <button
@@ -134,7 +229,7 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
                   onClick={handleSignout}
                   type="button"
                 >
-                  Sign out
+                  {t('common.signOut', 'Sign out')}
                 </button>
               </div>
             ) : null}

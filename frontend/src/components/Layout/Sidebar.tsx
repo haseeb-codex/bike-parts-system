@@ -14,6 +14,7 @@ import type { ComponentType } from 'react';
 import { NavLink } from 'react-router-dom';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useI18n } from '@/i18n/LanguageProvider';
 import { Button } from '@/components/ui/button';
 
 interface SidebarProps {
@@ -24,26 +25,32 @@ interface SidebarProps {
 }
 
 interface NavItem {
-  label: string;
+  labelKey: string;
   path: string;
   icon: ComponentType<{ className?: string }>;
   roles?: Array<'admin' | 'manager' | 'operator'>;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', path: '/', icon: Boxes },
-  { label: 'Materials', path: '/materials', icon: Package },
-  { label: 'Production', path: '/production', icon: Factory },
-  { label: 'Inventory', path: '/inventory', icon: FileBarChart2 },
-  { label: 'Sales', path: '/sales', icon: ShoppingCart },
-  { label: 'Employees', path: '/employees', icon: Users2, roles: ['admin', 'manager'] },
-  { label: 'Financial', path: '/financial', icon: FileBarChart2, roles: ['admin', 'manager'] },
-  { label: 'Utilities', path: '/utilities', icon: Wrench, roles: ['admin'] },
-  { label: 'Account Settings', path: '/account', icon: Cog },
+  { labelKey: 'route.dashboard', path: '/', icon: Boxes },
+  { labelKey: 'route.materials', path: '/materials', icon: Package },
+  { labelKey: 'route.production', path: '/production', icon: Factory },
+  { labelKey: 'route.inventory', path: '/inventory', icon: FileBarChart2 },
+  { labelKey: 'route.sales', path: '/sales', icon: ShoppingCart },
+  { labelKey: 'route.employees', path: '/employees', icon: Users2, roles: ['admin', 'manager'] },
+  {
+    labelKey: 'route.financial',
+    path: '/financial',
+    icon: FileBarChart2,
+    roles: ['admin', 'manager'],
+  },
+  { labelKey: 'route.utilities', path: '/utilities', icon: Wrench, roles: ['admin'] },
+  { labelKey: 'route.account', path: '/account', icon: Cog },
 ];
 
 export function Sidebar({ mobileOpen, collapsed, onToggleCollapse, onCloseMobile }: SidebarProps) {
   const { user } = useAuth();
+  const { isRtl, t } = useI18n();
 
   const visibleItems = NAV_ITEMS.filter((item) => {
     if (!item.roles || !user?.role) {
@@ -66,9 +73,10 @@ export function Sidebar({ mobileOpen, collapsed, onToggleCollapse, onCloseMobile
 
       <aside
         className={[
-          'fixed inset-y-0 left-0 z-40 overflow-x-hidden border-r border-border/80 bg-card/90 backdrop-blur-md transition-all duration-300',
+          'fixed inset-y-0 z-40 overflow-x-hidden bg-card/90 backdrop-blur-md transition-all duration-300',
+          isRtl ? 'right-0 border-l border-border/80' : 'left-0 border-r border-border/80',
           collapsed ? 'w-20' : 'w-72',
-          mobileOpen ? 'translate-x-0' : '-translate-x-full',
+          mobileOpen ? 'translate-x-0' : isRtl ? 'translate-x-full' : '-translate-x-full',
           'md:translate-x-0',
         ].join(' ')}
       >
@@ -93,10 +101,10 @@ export function Sidebar({ mobileOpen, collapsed, onToggleCollapse, onCloseMobile
                 <>
                   <div>
                     <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                      Bike Parts System
+                      {t('sidebar.brandTitle', 'Bike Parts System')}
                     </p>
                     <h2 className="mt-1 text-lg font-semibold text-foreground">
-                      Operations Console
+                      {t('sidebar.brandSubtitle', 'Operations Console')}
                     </h2>
                   </div>
                 </>
@@ -116,7 +124,7 @@ export function Sidebar({ mobileOpen, collapsed, onToggleCollapse, onCloseMobile
                 key={item.path}
                 to={item.path}
                 onClick={onCloseMobile}
-                title={collapsed ? item.label : undefined}
+                title={collapsed ? t(item.labelKey) : undefined}
                 className={({ isActive }) =>
                   [
                     'group flex rounded-lg py-2.5 text-sm font-medium transition-colors',
@@ -128,7 +136,7 @@ export function Sidebar({ mobileOpen, collapsed, onToggleCollapse, onCloseMobile
                 }
               >
                 <item.icon className="h-4 w-4" />
-                {collapsed ? null : <span>{item.label}</span>}
+                {collapsed ? null : <span>{t(item.labelKey)}</span>}
               </NavLink>
             ))}
           </nav>
@@ -143,15 +151,23 @@ export function Sidebar({ mobileOpen, collapsed, onToggleCollapse, onCloseMobile
               variant="outline"
               className={collapsed ? 'w-full justify-center px-0' : 'w-full justify-start gap-2'}
               onClick={onToggleCollapse}
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-label={
+                collapsed
+                  ? t('sidebar.expand', 'Expand sidebar')
+                  : t('sidebar.collapse', 'Collapse sidebar')
+              }
+              title={
+                collapsed
+                  ? t('sidebar.expand', 'Expand sidebar')
+                  : t('sidebar.collapse', 'Collapse sidebar')
+              }
             >
               {collapsed ? (
                 <PanelLeftOpen className="h-4 w-4" />
               ) : (
                 <PanelLeftClose className="h-4 w-4" />
               )}
-              {collapsed ? null : 'Collapse sidebar'}
+              {collapsed ? null : t('sidebar.collapse', 'Collapse sidebar')}
             </Button>
           </div>
         </div>
