@@ -2,6 +2,32 @@
 
 A comprehensive web application for managing bike spare parts manufacturing business operations.
 
+## Key Features
+
+- Operations dashboard with KPI cards, charts, activity feed, and alerts
+- Multi-language support with runtime language switching
+- RTL/LTR direction handling (Urdu/Arabic RTL, English/Dutch LTR)
+- Dark and light mode theme toggle
+- Role-aware navigation and protected routes
+- Modular frontend architecture with reusable UI components
+- Backend REST API for production, sales, inventory, employees, and finance
+
+## UI Screenshots
+
+### Dashboard (Light Theme)
+
+![Dashboard Light Theme](docs/screenshots/dashboard-light.png)
+
+### Dashboard (Urdu + RTL)
+
+![Dashboard Urdu RTL](docs/screenshots/dashboard-urdu-rtl.png)
+
+### Navbar Language / Theme Controls
+
+![Navbar Language and Theme Controls](docs/screenshots/navbar-language-theme.png)
+
+> Note: place screenshot files in `docs/screenshots/` using the exact names above.
+
 ## Project Structure
 
 - `/docs` - Documentation files
@@ -18,14 +44,26 @@ A comprehensive web application for managing bike spare parts manufacturing busi
 ### Installation
 
 1. Backend Setup:
+```
    cd backend
    npm install
    npm start
+```
 
 2. Frontend Setup:
+```
    cd frontend
    npm install
    npm start
+```
+
+## Frontend UX Highlights
+
+- Language selector in navbar (English, Dutch, Urdu, Arabic)
+- Flag-based language picker for quick switching
+- Persistent language preference across sessions
+- Theme mode persistence (dark/light)
+- Urdu and Arabic typography/direction optimized for readability
 
 ## Documentation
 
