@@ -84,8 +84,8 @@ export function Sidebar({ mobileOpen, collapsed, onToggleCollapse, onCloseMobile
           <div
             className={
               collapsed
-                ? 'relative border-b border-border/70 px-3 py-5'
-                : 'relative border-b border-border/70 px-5 py-5'
+                ? 'relative flex h-16 items-center justify-center border-b border-border/70 px-3'
+                : 'relative flex h-16 items-center border-b border-border/70 px-5'
             }
           >
             <div
@@ -94,7 +94,7 @@ export function Sidebar({ mobileOpen, collapsed, onToggleCollapse, onCloseMobile
               }
             >
               {collapsed ? (
-                <div className="grid place-items-center rounded-lg bg-primary/10 py-2">
+                <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary/10">
                   <span className="text-lg font-bold text-primary">BP</span>
                 </div>
               ) : (
@@ -103,7 +103,7 @@ export function Sidebar({ mobileOpen, collapsed, onToggleCollapse, onCloseMobile
                     <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                       {t('sidebar.brandTitle', 'Bike Parts System')}
                     </p>
-                    <h2 className="mt-1 text-lg font-semibold text-foreground">
+                    <h2 className="text-base font-semibold leading-tight text-foreground">
                       {t('sidebar.brandSubtitle', 'Operations Console')}
                     </h2>
                   </div>

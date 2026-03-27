@@ -1,6 +1,6 @@
-import { Menu, Moon, Settings, Sun, UserCircle2 } from 'lucide-react';
+import { Menu, Moon, Search, Settings, Sun, UserCircle2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import arFlag from '@/assets/flags/sa.svg';
 import enFlag from '@/assets/flags/gb.svg';
@@ -11,22 +11,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/i18n/LanguageProvider';
 import type { SupportedLanguage } from '@/i18n/translations';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface NavbarProps {
   onOpenSidebar: () => void;
 }
-
-const ROUTE_TITLES: Record<string, string> = {
-  '/': 'route.dashboard',
-  '/materials': 'route.materials',
-  '/production': 'route.production',
-  '/inventory': 'route.inventory',
-  '/sales': 'route.sales',
-  '/employees': 'route.employees',
-  '/financial': 'route.financial',
-  '/utilities': 'route.utilities',
-  '/account': 'route.account',
-};
 
 const LANGUAGE_FLAGS: Record<SupportedLanguage, string> = {
   en: enFlag,
@@ -54,7 +43,6 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const languageMenuRef = useRef<HTMLDivElement | null>(null);
-  const location = useLocation();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
@@ -77,8 +65,6 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
     return () => window.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const currentTitle = t(ROUTE_TITLES[location.pathname] || 'route.dashboard', 'Dashboard');
-
   const handleSignout = () => {
     logout();
     setMenuOpen(false);
@@ -92,11 +78,14 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
           <Button className="md:hidden" size="icon" variant="outline" onClick={onOpenSidebar}>
             <Menu className="h-4 w-4" />
           </Button>
-          <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              {t('common.controlPanel', 'Control Panel')}
-            </p>
-            <h1 className="text-lg font-semibold text-foreground">{currentTitle}</h1>
+
+          <div className="relative w-[220px] sm:w-[300px] lg:w-[380px]">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="search"
+              className="h-10 bg-card pl-9"
+              placeholder={t('common.search', 'Search...')}
+            />
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Factory, Package, RefreshCcw, ShoppingCart, TrendingUp, Users2 } from 'lucide-react';
 
 import { ActivityFeed } from '@/components/Dashboard/ActivityFeed';
@@ -7,6 +7,7 @@ import { ChartCard } from '@/components/Dashboard/ChartCard';
 import { DashboardSkeleton } from '@/components/Dashboard/DashboardSkeleton';
 import { StatCard } from '@/components/Dashboard/StatCard';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { useLocalWeather } from '@/hooks/useLocalWeather';
 import { useI18n } from '@/i18n/LanguageProvider';
 import { PageShell } from '@/components/Layout/PageShell';
 import { Badge } from '@/components/ui/badge';
@@ -42,9 +43,35 @@ function ChartFallback() {
 export default function DashboardPage() {
   const { loading, refreshing, error, refresh, viewModel } = useDashboardData();
   const { language, t } = useI18n();
+  const [now, setNow] = useState(() => new Date());
+  const { weatherText } = useLocalWeather(language);
 
   const locale =
     language === 'nl' ? 'nl-NL' : language === 'ar' ? 'ar' : language === 'ur' ? 'ur-PK' : 'en-US';
+
+  useEffect(() => {
+    const timerId = window.setInterval(() => {
+      setNow(new Date());
+    }, 1000);
+
+    return () => window.clearInterval(timerId);
+  }, []);
+
+  const clockTime = new Intl.DateTimeFormat(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: language === 'en' || language === 'nl',
+  }).format(now);
+
+  const clockDate = new Intl.DateTimeFormat(locale, {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(now);
+
+  const headerDescription = `${clockDate} • ${weatherText}`;
 
   function formatCurrency(value: number): string {
     return new Intl.NumberFormat(locale, {
@@ -56,13 +83,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <PageShell
-        title={t('dashboard.title', 'Operations Dashboard')}
-        description={t(
-          'dashboard.subtitle',
-          'Live operations intelligence for production, sales, inventory, and workforce.'
-        )}
-      >
+      <PageShell title={clockTime} description={headerDescription}>
         <DashboardSkeleton />
       </PageShell>
     );
@@ -70,11 +91,8 @@ export default function DashboardPage() {
 
   return (
     <PageShell
-      title={t('dashboard.title', 'Operations Dashboard')}
-      description={t(
-        'dashboard.subtitle',
-        'Live operations intelligence for production, sales, inventory, and workforce.'
-      )}
+      title={clockTime}
+      description={headerDescription}
       actions={
         <>
           <Button type="button" variant="outline" onClick={refresh} disabled={refreshing}>
