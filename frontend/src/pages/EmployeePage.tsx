@@ -3,6 +3,7 @@ import { isAxiosError } from 'axios';
 import { Pencil, Plus, RefreshCcw, Trash2, Users2 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import ConfirmDialog from '@/components/Common/ConfirmDialog';
 import { PageShell } from '@/components/Layout/PageShell';
 import { useI18n } from '@/i18n/LanguageProvider';
 import { Badge } from '@/components/ui/badge';
@@ -64,6 +65,7 @@ export default function EmployeePage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteDialogEmployee, setDeleteDialogEmployee] = useState<EmployeeRecord | null>(null);
 
   const [searchText, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -211,17 +213,13 @@ export default function EmployeePage() {
       return;
     }
 
-    const confirmed = window.confirm(`Delete ${employee.name}?`);
-    if (!confirmed) {
-      return;
-    }
-
     setDeletingId(employee._id);
     setError(null);
 
     try {
       const message = await deleteEmployee(employee._id);
       setSuccessMessage(message);
+      setDeleteDialogEmployee(null);
       await loadEmployees(true);
     } catch (deleteError) {
       setError(mapApiError(deleteError, 'Unable to delete employee. Please try again.'));
@@ -355,15 +353,23 @@ export default function EmployeePage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[780px] border-collapse">
+            <table className="w-full min-w-[780px] table-fixed border-collapse">
+              <colgroup>
+                <col className="w-[27%]" />
+                <col className="w-[12%]" />
+                <col className="w-[13%]" />
+                <col className="w-[15%]" />
+                <col className="w-[11%]" />
+                <col className="w-[22%]" />
+              </colgroup>
               <thead>
                 <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="px-3 py-2 font-medium">Name</th>
-                  <th className="px-3 py-2 font-medium">Role</th>
-                  <th className="px-3 py-2 font-medium">Salary</th>
-                  <th className="px-3 py-2 font-medium">Joining</th>
-                  <th className="px-3 py-2 font-medium">Status</th>
-                  <th className="px-3 py-2 font-medium">Actions</th>
+                  <th className="w-[27%] px-3 py-2 font-medium">Name</th>
+                  <th className="w-[12%] px-3 py-2 font-medium">Role</th>
+                  <th className="w-[13%] px-3 py-2 font-medium">Salary</th>
+                  <th className="w-[15%] px-3 py-2 font-medium">Joining</th>
+                  <th className="w-[11%] px-3 py-2 font-medium">Status</th>
+                  <th className="w-[22%] px-3 py-2 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -371,25 +377,25 @@ export default function EmployeePage() {
                   tableSkeletonRows.map((_, index) => (
                     <tr
                       key={`skeleton-${index}`}
-                      className="border-b align-top text-sm last:border-b-0"
+                      className="border-b text-sm last:border-b-0"
                     >
-                      <td className="px-3 py-3">
+                      <td className="align-middle px-3 py-3">
                         <div className="h-4 w-40 animate-pulse rounded bg-muted" />
                         <div className="mt-2 h-3 w-52 animate-pulse rounded bg-muted" />
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="align-middle px-3 py-3">
                         <div className="h-4 w-20 animate-pulse rounded bg-muted" />
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="align-middle px-3 py-3">
                         <div className="h-4 w-24 animate-pulse rounded bg-muted" />
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="align-middle px-3 py-3">
                         <div className="h-4 w-28 animate-pulse rounded bg-muted" />
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="align-middle px-3 py-3">
                         <div className="h-5 w-16 animate-pulse rounded bg-muted" />
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="align-middle px-3 py-3">
                         <div className="flex gap-2">
                           <div className="h-8 w-16 animate-pulse rounded bg-muted" />
                           <div className="h-8 w-16 animate-pulse rounded bg-muted" />
@@ -405,22 +411,36 @@ export default function EmployeePage() {
                   </tr>
                 ) : (
                   employees.map((employee) => (
-                    <tr key={employee._id} className="border-b align-top text-sm last:border-b-0">
-                      <td className="px-3 py-3">
-                        <div className="font-medium">{employee.name}</div>
-                        <div className="text-xs text-muted-foreground">{employee.email}</div>
+                    <tr key={employee._id} className="border-b text-sm last:border-b-0">
+                      <td className="align-middle px-3 py-3">
+                        <div
+                          className="max-w-[150px] truncate font-medium sm:max-w-[190px] lg:max-w-[230px]"
+                          title={employee.name}
+                        >
+                          {employee.name}
+                        </div>
+                        <div
+                          className="max-w-[150px] truncate text-xs text-muted-foreground sm:max-w-[190px] lg:max-w-[230px]"
+                          title={employee.email}
+                        >
+                          {employee.email}
+                        </div>
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="align-middle px-3 py-3">
                         {(employee.role || 'employee').replace('_', ' ')}
                       </td>
-                      <td className="px-3 py-3">{formatCurrency(locale, employee.salary)}</td>
-                      <td className="px-3 py-3">{formatDate(locale, employee.joiningDate)}</td>
-                      <td className="px-3 py-3">
+                      <td className="align-middle px-3 py-3">
+                        {formatCurrency(locale, employee.salary)}
+                      </td>
+                      <td className="align-middle px-3 py-3">
+                        {formatDate(locale, employee.joiningDate)}
+                      </td>
+                      <td className="align-middle px-3 py-3">
                         <Badge variant={employee.status === 'active' ? 'success' : 'warning'}>
                           {employee.status}
                         </Badge>
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="align-middle px-3 py-3">
                         <div className="flex items-center gap-2">
                           <Button
                             type="button"
@@ -441,7 +461,7 @@ export default function EmployeePage() {
                                 ? 'Delete employee'
                                 : 'Only admin or super admin is allowed to manage employee records'
                             }
-                            onClick={() => void handleDelete(employee)}
+                            onClick={() => setDeleteDialogEmployee(employee)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -526,6 +546,30 @@ export default function EmployeePage() {
           </div>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={Boolean(deleteDialogEmployee)}
+        title="Delete Employee"
+        description={
+          deleteDialogEmployee
+            ? `Are you sure you want to delete ${deleteDialogEmployee.name}? This action cannot be undone.`
+            : 'This action cannot be undone.'
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        loading={Boolean(deleteDialogEmployee && deletingId === deleteDialogEmployee._id)}
+        onCancel={() => {
+          if (!deletingId) {
+            setDeleteDialogEmployee(null);
+          }
+        }}
+        onConfirm={() => {
+          if (deleteDialogEmployee) {
+            return handleDelete(deleteDialogEmployee);
+          }
+          return undefined;
+        }}
+      />
     </PageShell>
   );
 }
