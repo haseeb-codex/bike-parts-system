@@ -30,7 +30,7 @@ export default function AccountSettingsPage() {
             <div>
               <p className="text-xs uppercase tracking-wide text-muted-foreground">Role</p>
               <Badge variant="secondary" className="mt-1">
-                {user?.role || 'operator'}
+                {user?.role || 'employee'}
               </Badge>
             </div>
           </CardContent>

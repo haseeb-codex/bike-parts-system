@@ -16,6 +16,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/i18n/LanguageProvider';
 import { Button } from '@/components/ui/button';
+import type { UserRole } from '@/types/auth';
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -28,7 +29,7 @@ interface NavItem {
   labelKey: string;
   path: string;
   icon: ComponentType<{ className?: string }>;
-  roles?: Array<'admin' | 'manager' | 'operator'>;
+  roles?: UserRole[];
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -37,14 +38,19 @@ const NAV_ITEMS: NavItem[] = [
   { labelKey: 'route.production', path: '/production', icon: Factory },
   { labelKey: 'route.inventory', path: '/inventory', icon: FileBarChart2 },
   { labelKey: 'route.sales', path: '/sales', icon: ShoppingCart },
-  { labelKey: 'route.employees', path: '/employees', icon: Users2, roles: ['admin', 'manager'] },
+  {
+    labelKey: 'route.employees',
+    path: '/employees',
+    icon: Users2,
+    roles: ['admin', 'super_admin'],
+  },
   {
     labelKey: 'route.financial',
     path: '/financial',
     icon: FileBarChart2,
-    roles: ['admin', 'manager'],
+    roles: ['admin', 'super_admin'],
   },
-  { labelKey: 'route.utilities', path: '/utilities', icon: Wrench, roles: ['admin'] },
+  { labelKey: 'route.utilities', path: '/utilities', icon: Wrench, roles: ['super_admin'] },
   { labelKey: 'route.account', path: '/account', icon: Cog },
 ];
 

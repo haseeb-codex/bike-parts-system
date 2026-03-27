@@ -2,7 +2,7 @@ const request = require('supertest');
 const mongoose = require('mongoose');
 const app = require('@/app');
 const { connectDatabase } = require('@/config/database');
-const Employee = require('@/models/Employee');
+const User = require('@/models/User');
 
 function uniqueId(prefix) {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
@@ -11,6 +11,7 @@ function uniqueId(prefix) {
 describe('Employees Module', () => {
   let managerToken;
   let adminToken;
+  let superAdminToken;
   let createdEmployeeId;
 
   beforeAll(async () => {
@@ -18,6 +19,7 @@ describe('Employees Module', () => {
 
     const managerEmail = `${uniqueId('employee-manager')}@example.com`;
     const adminEmail = `${uniqueId('employee-admin')}@example.com`;
+    const superAdminEmail = `${uniqueId('employee-super-admin')}@example.com`;
     const password = 'Passw0rd!';
 
     await request(app).post('/api/auth/register').send({
@@ -34,16 +36,27 @@ describe('Employees Module', () => {
       role: 'admin',
     });
 
+    await request(app).post('/api/auth/register').send({
+      name: 'Employee Super Admin',
+      email: superAdminEmail,
+      password,
+      role: 'super_admin',
+    });
+
     const managerLoginRes = await request(app).post('/api/auth/login').send({ email: managerEmail, password });
     const adminLoginRes = await request(app).post('/api/auth/login').send({ email: adminEmail, password });
+    const superAdminLoginRes = await request(app)
+      .post('/api/auth/login')
+      .send({ email: superAdminEmail, password });
 
     managerToken = managerLoginRes.body?.data?.token;
     adminToken = adminLoginRes.body?.data?.token;
+    superAdminToken = superAdminLoginRes.body?.data?.token;
   });
 
   afterAll(async () => {
     if (createdEmployeeId) {
-      await Employee.findByIdAndDelete(createdEmployeeId);
+      await User.findByIdAndDelete(createdEmployeeId);
     }
     await mongoose.connection.close();
   });
@@ -51,12 +64,10 @@ describe('Employees Module', () => {
   test('POST /api/employees creates employee record', async () => {
     const response = await request(app)
       .post('/api/employees')
-      .set('Authorization', `Bearer ${managerToken}`)
+      .set('Authorization', `Bearer ${superAdminToken}`)
       .send({
-        employeeCode: uniqueId('EMP'),
         name: 'Test Employee',
-        department: 'Production',
-        designation: 'Machine Operator',
+        role: 'employee',
         phone: '03001234567',
         email: `${uniqueId('emp')}@example.com`,
         salary: 45000,
@@ -81,7 +92,7 @@ describe('Employees Module', () => {
   test('PUT /api/employees/:id updates employee record', async () => {
     const response = await request(app)
       .put(`/api/employees/${createdEmployeeId}`)
-      .set('Authorization', `Bearer ${managerToken}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({
         salary: 50000,
         status: 'active',

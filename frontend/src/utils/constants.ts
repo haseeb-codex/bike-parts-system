@@ -10,4 +10,4 @@ export const API_ENDPOINTS = {
 };
 
 export const MATERIAL_TYPES = ['PP', 'ABS', 'PE', 'PC', 'POM'];
-export const ROLES = ['admin', 'manager', 'operator'];
+export const ROLES = ['admin', 'super_admin', 'employee'];

@@ -4,11 +4,15 @@ const User = require('@/models/User');
 const { config } = require('@/config/environment');
 const logger = require('@/utils/logger');
 
+function normalizeAuthRole(role) {
+  return role === 'admin' ? 'super_admin' : role;
+}
+
 const registerSchema = Joi.object({
   name: Joi.string().min(2).max(80).required(),
   email: Joi.string().email().required(),
   password: Joi.string().min(8).required(),
-  role: Joi.string().valid('admin', 'manager', 'operator').optional(),
+  role: Joi.string().valid('admin', 'super_admin', 'employee', 'manager', 'operator').optional(),
 });
 
 const loginSchema = Joi.object({
@@ -38,7 +42,7 @@ async function register(req, res, next) {
       name: value.name,
       email: value.email.toLowerCase(),
       password: value.password,
-      role: value.role || 'operator',
+      role: value.role || 'employee',
     });
 
     const token = signToken(user);
@@ -85,7 +89,7 @@ async function login(req, res, next) {
           _id: user._id,
           name: user.name,
           email: user.email,
-          role: user.role,
+          role: normalizeAuthRole(user.role),
           isActive: user.isActive,
           lastLoginAt: user.lastLoginAt,
         },

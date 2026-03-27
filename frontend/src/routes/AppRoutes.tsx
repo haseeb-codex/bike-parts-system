@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 
 import DashboardPage from '@/pages/DashboardPage';
+import AddEmployeePage from '@/pages/AddEmployeePage';
 import EmployeePage from '@/pages/EmployeePage';
 import FinancialPage from '@/pages/FinancialPage';
 import InventoryPage from '@/pages/InventoryPage';
@@ -40,12 +41,13 @@ export default function AppRoutes() {
           <Route path="/sales" element={<SalesPage />} />
           <Route path="/account" element={<AccountSettingsPage />} />
 
-          <Route element={<ProtectedRoute requiredRoles={['admin', 'manager']} />}>
+          <Route element={<ProtectedRoute requiredRoles={['admin', 'super_admin']} />}>
             <Route path="/employees" element={<EmployeePage />} />
             <Route path="/financial" element={<FinancialPage />} />
           </Route>
 
-          <Route element={<ProtectedRoute requiredRoles={['admin']} />}>
+          <Route element={<ProtectedRoute requiredRoles={['super_admin']} />}>
+            <Route path="/employees/add" element={<AddEmployeePage />} />
             <Route path="/utilities" element={<UtilityPage />} />
           </Route>
         </Route>

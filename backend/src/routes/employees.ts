@@ -14,8 +14,8 @@ const router = express.Router();
 
 router.get('/', auth, getEmployees);
 router.get('/:id', auth, getEmployeeById);
-router.post('/', auth, authorize('admin', 'manager'), validate(createEmployeeSchema), createEmployee);
-router.put('/:id', auth, authorize('admin', 'manager'), validate(updateEmployeeSchema), updateEmployee);
-router.delete('/:id', auth, authorize('admin'), deleteEmployee);
+router.post('/', auth, authorize('super_admin'), validate(createEmployeeSchema), createEmployee);
+router.put('/:id', auth, authorize('admin', 'super_admin'), validate(updateEmployeeSchema), updateEmployee);
+router.delete('/:id', auth, authorize('admin', 'super_admin'), deleteEmployee);
 
 module.exports = router;

@@ -4,10 +4,15 @@ const employeeSchema = new mongoose.Schema(
 	{
 		employeeCode: { type: String, required: true, unique: true, trim: true, uppercase: true, index: true },
 		name: { type: String, required: true, trim: true, index: true },
-		department: { type: String, required: true, trim: true, index: true },
-		designation: { type: String, required: true, trim: true },
+		role: {
+			type: String,
+			enum: ['admin', 'super_admin', 'employee'],
+			required: true,
+			default: 'employee',
+			index: true,
+		},
 		phone: { type: String, required: true, trim: true },
-		email: { type: String, required: true, trim: true, lowercase: true, index: true },
+		email: { type: String, required: true, unique: true, trim: true, lowercase: true, index: true },
 		salary: { type: Number, required: true, min: 0 },
 		joiningDate: { type: Date, required: true, index: true },
 		status: { type: String, enum: ['active', 'inactive'], default: 'active', index: true },

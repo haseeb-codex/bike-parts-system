@@ -26,9 +26,40 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['admin', 'manager', 'operator'],
-      default: 'operator',
+      enum: ['admin', 'super_admin', 'employee', 'manager', 'operator'],
+      default: 'employee',
       index: true,
+    },
+    employeeCode: {
+      type: String,
+      unique: true,
+      sparse: true,
+      uppercase: true,
+      trim: true,
+      index: true,
+    },
+    phone: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    salary: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    joiningDate: {
+      type: Date,
+      default: Date.now,
+      index: true,
+    },
+    address: {
+      type: String,
+      default: '',
+    },
+    notes: {
+      type: String,
+      default: '',
     },
     isActive: {
       type: Boolean,

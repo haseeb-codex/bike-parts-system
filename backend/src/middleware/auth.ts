@@ -2,6 +2,10 @@ const jwt = require('jsonwebtoken');
 const { config } = require('@/config/environment');
 const User = require('@/models/User');
 
+function normalizeAuthRole(role) {
+  return role === 'admin' ? 'super_admin' : role;
+}
+
 async function auth(req, res, next) {
   try {
     const authHeader = req.headers.authorization || '';
@@ -18,6 +22,8 @@ async function auth(req, res, next) {
       return res.status(401).json({ success: false, message: 'Invalid token user' });
     }
 
+    user.role = normalizeAuthRole(user.role);
+
     req.user = user;
     return next();
   } catch (error) {
@@ -31,7 +37,9 @@ function authorize(...roles) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
-    if (!roles.includes(req.user.role)) {
+    const effectiveRole = normalizeAuthRole(req.user.role);
+
+    if (!roles.includes(effectiveRole)) {
       return res.status(403).json({ success: false, message: 'Forbidden' });
     }
 

@@ -1,15 +1,15 @@
 const Joi = require('joi');
 
 const statusSchema = Joi.string().valid('active', 'inactive');
+const roleSchema = Joi.string().valid('admin', 'super_admin', 'employee');
 
 const createEmployeeSchema = Joi.object({
-	employeeCode: Joi.string().min(2).max(40).required(),
+	employeeCode: Joi.string().min(2).max(40).optional(),
 	name: Joi.string().min(2).max(120).required(),
-	department: Joi.string().min(2).max(80).required(),
-	designation: Joi.string().min(2).max(80).required(),
+	role: roleSchema.optional(),
 	phone: Joi.string().min(6).max(30).required(),
 	email: Joi.string().email().required(),
-	salary: Joi.number().min(0).required(),
+	salary: Joi.number().greater(0).optional(),
 	joiningDate: Joi.date().required(),
 	status: statusSchema.default('active'),
 	address: Joi.string().allow('').max(300).default(''),
@@ -19,11 +19,10 @@ const createEmployeeSchema = Joi.object({
 const updateEmployeeSchema = Joi.object({
 	employeeCode: Joi.string().min(2).max(40),
 	name: Joi.string().min(2).max(120),
-	department: Joi.string().min(2).max(80),
-	designation: Joi.string().min(2).max(80),
+	role: roleSchema.optional(),
 	phone: Joi.string().min(6).max(30),
 	email: Joi.string().email(),
-	salary: Joi.number().min(0),
+	salary: Joi.number().greater(0),
 	joiningDate: Joi.date(),
 	status: statusSchema,
 	address: Joi.string().allow('').max(300),
