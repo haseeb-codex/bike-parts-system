@@ -375,10 +375,7 @@ export default function EmployeePage() {
               <tbody>
                 {loading ? (
                   tableSkeletonRows.map((_, index) => (
-                    <tr
-                      key={`skeleton-${index}`}
-                      className="border-b text-sm last:border-b-0"
-                    >
+                    <tr key={`skeleton-${index}`} className="border-b text-sm last:border-b-0">
                       <td className="align-middle px-3 py-3">
                         <div className="h-4 w-40 animate-pulse rounded bg-muted" />
                         <div className="mt-2 h-3 w-52 animate-pulse rounded bg-muted" />
