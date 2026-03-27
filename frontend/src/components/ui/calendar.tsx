@@ -40,8 +40,7 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         selected:
           'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
         today: 'ring-1 ring-primary/40',
-        outside:
-          'text-muted-foreground opacity-50',
+        outside: 'text-muted-foreground opacity-50',
         disabled: 'text-muted-foreground opacity-50',
         range_middle: 'aria-selected:bg-accent aria-selected:text-accent-foreground',
         hidden: 'invisible',

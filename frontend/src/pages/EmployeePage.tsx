@@ -66,8 +66,13 @@ export default function EmployeePage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [searchText, setSearchText] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | EmployeeStatus>('all');
   const [roleFilter, setRoleFilter] = useState<'all' | EmployeeRole>('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -75,38 +80,92 @@ export default function EmployeePage() {
   const locale =
     language === 'nl' ? 'nl-NL' : language === 'ar' ? 'ar' : language === 'ur' ? 'ur-PK' : 'en-US';
 
-  const loadEmployees = useCallback(async (isRefresh: boolean) => {
-    try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
+  const loadEmployees = useCallback(
+    async (isRefresh: boolean) => {
+      try {
+        if (isRefresh) {
+          setRefreshing(true);
+        }
+
         setLoading(true);
+
+        setError(null);
+
+        const result = await listEmployees({
+          sortBy: 'createdAt',
+          order: 'desc',
+          page,
+          limit: pageSize,
+          ...(debouncedSearch.trim() ? { search: debouncedSearch.trim() } : {}),
+          ...(statusFilter !== 'all' ? { status: statusFilter } : {}),
+          ...(roleFilter !== 'all' ? { role: roleFilter } : {}),
+        });
+
+        setEmployees(result.items);
+
+        const meta = result.meta;
+        setTotalRecords(meta?.total ?? result.items.length);
+        setTotalPages(Math.max(meta?.totalPages ?? 1, 1));
+
+        if (meta?.page && meta.page !== page) {
+          setPage(meta.page);
+        }
+      } catch (loadError) {
+        setError(mapApiError(loadError, 'Unable to load employees right now. Please try again.'));
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-
-      setError(null);
-
-      const result = await listEmployees({
-        sortBy: 'createdAt',
-        order: 'desc',
-        limit: 200,
-      });
-
-      setEmployees(result.items);
-    } catch (loadError) {
-      setError(mapApiError(loadError, 'Unable to load employees right now. Please try again.'));
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+    },
+    [debouncedSearch, page, pageSize, roleFilter, statusFilter]
+  );
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
-      void loadEmployees(false);
-    }, 250);
+      setDebouncedSearch(searchText);
+    }, 350);
 
     return () => window.clearTimeout(timeoutId);
+  }, [searchText]);
+
+  useEffect(() => {
+    void loadEmployees(false);
   }, [loadEmployees]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 1) {
+      return [1];
+    }
+
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
+
+    const pages: Array<number | 'ellipsis-left' | 'ellipsis-right'> = [1];
+    const start = Math.max(2, page - 1);
+    const end = Math.min(totalPages - 1, page + 1);
+
+    if (start > 2) {
+      pages.push('ellipsis-left');
+    }
+
+    for (let value = start; value <= end; value += 1) {
+      pages.push(value);
+    }
+
+    if (end < totalPages - 1) {
+      pages.push('ellipsis-right');
+    }
+
+    pages.push(totalPages);
+    return pages;
+  }, [page, totalPages]);
 
   useEffect(() => {
     const state = location.state as { message?: string } | null;
@@ -130,41 +189,22 @@ export default function EmployeePage() {
     return () => window.clearTimeout(timeoutId);
   }, [successMessage]);
 
-  const roles = useMemo(() => {
-    return Array.from(new Set(employees.map((employee) => employee.role || 'employee'))).sort(
-      (a, b) => a.localeCompare(b)
-    );
-  }, [employees]);
+  const roles = useMemo(
+    () => [
+      { value: 'employee', label: 'Employee' },
+      { value: 'admin', label: 'Admin' },
+      { value: 'super_admin', label: 'Super Admin' },
+    ],
+    []
+  );
 
   const isSuperAdmin = user?.role === 'super_admin';
   const canManage = user?.role === 'super_admin' || user?.role === 'admin';
 
-  const statusCounts = useMemo(() => {
-    const active = employees.filter((employee) => employee.status === 'active').length;
-    const inactive = employees.filter((employee) => employee.status === 'inactive').length;
-    return {
-      all: employees.length,
-      active,
-      inactive,
-    };
-  }, [employees]);
+  const tableSkeletonRows = useMemo(() => Array.from({ length: pageSize }), [pageSize]);
 
-  const filteredEmployees = useMemo(() => {
-    const normalizedSearch = searchText.trim().toLowerCase();
-
-    return employees.filter((employee) => {
-      const normalizedRole = employee.role || 'employee';
-      const matchesStatus = statusFilter === 'all' ? true : employee.status === statusFilter;
-      const matchesRole = roleFilter === 'all' ? true : normalizedRole === roleFilter;
-      const matchesSearch =
-        !normalizedSearch ||
-        employee.name.toLowerCase().includes(normalizedSearch) ||
-        employee.email.toLowerCase().includes(normalizedSearch) ||
-        normalizedRole.toLowerCase().includes(normalizedSearch);
-
-      return matchesStatus && matchesRole && matchesSearch;
-    });
-  }, [employees, roleFilter, searchText, statusFilter]);
+  const rangeStart = totalRecords === 0 ? 0 : (page - 1) * pageSize + 1;
+  const rangeEnd = Math.min(page * pageSize, totalRecords);
 
   const handleDelete = async (employee: EmployeeRecord) => {
     if (!canManage) {
@@ -249,12 +289,12 @@ export default function EmployeePage() {
               className={`rounded-md px-3 py-1 text-sm font-medium ${
                 statusFilter === 'all' ? 'bg-secondary text-foreground' : 'text-muted-foreground'
               }`}
-              onClick={() => setStatusFilter('all')}
+              onClick={() => {
+                setStatusFilter('all');
+                setPage(1);
+              }}
             >
-              All{' '}
-              <span className="ml-1 rounded bg-muted px-1.5 py-0.5 text-xs">
-                {statusCounts.all}
-              </span>
+              All
             </button>
             <button
               type="button"
@@ -263,12 +303,12 @@ export default function EmployeePage() {
                   ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
                   : 'text-muted-foreground'
               }`}
-              onClick={() => setStatusFilter('active')}
+              onClick={() => {
+                setStatusFilter('active');
+                setPage(1);
+              }}
             >
-              Active{' '}
-              <span className="ml-1 rounded bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                {statusCounts.active}
-              </span>
+              Active
             </button>
             <button
               type="button"
@@ -277,12 +317,12 @@ export default function EmployeePage() {
                   ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
                   : 'text-muted-foreground'
               }`}
-              onClick={() => setStatusFilter('inactive')}
+              onClick={() => {
+                setStatusFilter('inactive');
+                setPage(1);
+              }}
             >
-              Inactive{' '}
-              <span className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-                {statusCounts.inactive}
-              </span>
+              Inactive
             </button>
           </div>
 
@@ -290,12 +330,15 @@ export default function EmployeePage() {
             <select
               className={inputClassName}
               value={roleFilter}
-              onChange={(event) => setRoleFilter(event.target.value)}
+              onChange={(event) => {
+                setRoleFilter(event.target.value as 'all' | EmployeeRole);
+                setPage(1);
+              }}
             >
               <option value="all">All roles</option>
               {roles.map((role) => (
-                <option key={role} value={role}>
-                  {role.replace('_', ' ')}
+                <option key={role.value} value={role.value}>
+                  {role.label}
                 </option>
               ))}
             </select>
@@ -303,18 +346,20 @@ export default function EmployeePage() {
             <Input
               className="md:col-span-2"
               value={searchText}
-              onChange={(event) => setSearchText(event.target.value)}
+              onChange={(event) => {
+                setSearchText(event.target.value);
+                setPage(1);
+              }}
               placeholder="Search by name, email, role"
             />
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[840px] border-collapse">
+            <table className="w-full min-w-[780px] border-collapse">
               <thead>
                 <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <th className="px-3 py-2 font-medium">Name</th>
                   <th className="px-3 py-2 font-medium">Role</th>
-                  <th className="px-3 py-2 font-medium">Contact</th>
                   <th className="px-3 py-2 font-medium">Salary</th>
                   <th className="px-3 py-2 font-medium">Joining</th>
                   <th className="px-3 py-2 font-medium">Status</th>
@@ -323,27 +368,50 @@ export default function EmployeePage() {
               </thead>
               <tbody>
                 {loading ? (
+                  tableSkeletonRows.map((_, index) => (
+                    <tr
+                      key={`skeleton-${index}`}
+                      className="border-b align-top text-sm last:border-b-0"
+                    >
+                      <td className="px-3 py-3">
+                        <div className="h-4 w-40 animate-pulse rounded bg-muted" />
+                        <div className="mt-2 h-3 w-52 animate-pulse rounded bg-muted" />
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="h-4 w-28 animate-pulse rounded bg-muted" />
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="h-5 w-16 animate-pulse rounded bg-muted" />
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="flex gap-2">
+                          <div className="h-8 w-16 animate-pulse rounded bg-muted" />
+                          <div className="h-8 w-16 animate-pulse rounded bg-muted" />
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : employees.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-3 py-6 text-center text-sm text-muted-foreground">
-                      Loading employees...
-                    </td>
-                  </tr>
-                ) : filteredEmployees.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-3 py-6 text-center text-sm text-muted-foreground">
+                    <td colSpan={6} className="px-3 py-6 text-center text-sm text-muted-foreground">
                       No employee records found.
                     </td>
                   </tr>
                 ) : (
-                  filteredEmployees.map((employee) => (
+                  employees.map((employee) => (
                     <tr key={employee._id} className="border-b align-top text-sm last:border-b-0">
-                      <td className="px-3 py-3 font-medium">{employee.name}</td>
                       <td className="px-3 py-3">
-                        {(employee.role || 'employee').replace('_', ' ')}
+                        <div className="font-medium">{employee.name}</div>
+                        <div className="text-xs text-muted-foreground">{employee.email}</div>
                       </td>
                       <td className="px-3 py-3">
-                        <div>{employee.phone}</div>
-                        <div className="text-xs text-muted-foreground">{employee.email}</div>
+                        {(employee.role || 'employee').replace('_', ' ')}
                       </td>
                       <td className="px-3 py-3">{formatCurrency(locale, employee.salary)}</td>
                       <td className="px-3 py-3">{formatDate(locale, employee.joiningDate)}</td>
@@ -362,7 +430,6 @@ export default function EmployeePage() {
                             onClick={() => navigate(`/employees/add?edit=${employee._id}`)}
                           >
                             <Pencil className="h-4 w-4" />
-                            Edit
                           </Button>
                           <Button
                             type="button"
@@ -377,7 +444,6 @@ export default function EmployeePage() {
                             onClick={() => void handleDelete(employee)}
                           >
                             <Trash2 className="h-4 w-4" />
-                            {deletingId === employee._id ? 'Deleting...' : 'Delete'}
                           </Button>
                         </div>
                       </td>
@@ -386,6 +452,77 @@ export default function EmployeePage() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-3 border-t pt-4 md:flex-row md:items-center md:justify-between">
+            <div className="text-sm text-muted-foreground">
+              Showing {rangeStart}-{rangeEnd} of {totalRecords}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="text-sm text-muted-foreground" htmlFor="employee-page-size">
+                Rows per page
+              </label>
+              <select
+                id="employee-page-size"
+                className="h-9 rounded-md border border-input bg-card px-2 text-sm"
+                value={pageSize}
+                onChange={(event) => {
+                  setPageSize(Number(event.target.value));
+                  setPage(1);
+                }}
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={loading || page <= 1}
+                onClick={() => setPage((current) => Math.max(current - 1, 1))}
+              >
+                Previous
+              </Button>
+
+              <div className="flex items-center gap-1">
+                {pageNumbers.map((item, index) => {
+                  if (typeof item !== 'number') {
+                    return (
+                      <span key={`${item}-${index}`} className="px-2 text-sm text-muted-foreground">
+                        ...
+                      </span>
+                    );
+                  }
+
+                  return (
+                    <Button
+                      key={item}
+                      type="button"
+                      size="sm"
+                      variant={item === page ? 'default' : 'outline'}
+                      className="h-8 min-w-8 px-2"
+                      disabled={loading}
+                      onClick={() => setPage(item)}
+                    >
+                      {item}
+                    </Button>
+                  );
+                })}
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={loading || page >= totalPages}
+                onClick={() => setPage((current) => Math.min(current + 1, totalPages))}
+              >
+                Next
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

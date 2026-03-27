@@ -32,20 +32,17 @@ const employeeSchema = z.object({
     .trim()
     .regex(/^\d{7,20}$/, 'Please enter a valid phone number.'),
   role: z.enum(['employee', 'admin', 'super_admin']),
-  salary: z.preprocess(
-    (value) => {
-      if (value === '' || value === undefined || value === null) {
-        return undefined;
-      }
+  salary: z.preprocess((value) => {
+    if (value === '' || value === undefined || value === null) {
+      return undefined;
+    }
 
-      if (typeof value === 'number' && Number.isNaN(value)) {
-        return undefined;
-      }
+    if (typeof value === 'number' && Number.isNaN(value)) {
+      return undefined;
+    }
 
-      return value;
-    },
-    z.number().gt(0, 'Salary must be greater than 0.').optional()
-  ),
+    return value;
+  }, z.number().gt(0, 'Salary must be greater than 0.').optional()),
   joiningDate: z.date({ required_error: 'Joining date is required.' }),
   status: z.enum(['active', 'inactive']),
 });

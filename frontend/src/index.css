@@ -68,11 +68,7 @@ body {
 html[lang='ur'] body,
 html[lang='ar'] body {
   font-family:
-    'Jameel Noori Nastaleeq',
-    'Noto Nastaliq Urdu',
-    'Noto Naskh Arabic',
-    'Segoe UI',
-    Tahoma,
+    'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu', 'Noto Naskh Arabic', 'Segoe UI', Tahoma,
     sans-serif;
 }
 
