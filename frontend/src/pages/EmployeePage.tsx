@@ -75,6 +75,7 @@ export default function EmployeePage() {
   const [pageSize, setPageSize] = useState(10);
   const [totalRecords, setTotalRecords] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [statusCounts, setStatusCounts] = useState({ all: 0, active: 0, inactive: 0 });
 
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -93,21 +94,38 @@ export default function EmployeePage() {
 
         setError(null);
 
-        const result = await listEmployees({
-          sortBy: 'createdAt',
-          order: 'desc',
-          page,
-          limit: pageSize,
+        const sharedFilters = {
           ...(debouncedSearch.trim() ? { search: debouncedSearch.trim() } : {}),
-          ...(statusFilter !== 'all' ? { status: statusFilter } : {}),
           ...(roleFilter !== 'all' ? { role: roleFilter } : {}),
-        });
+        };
+
+        const [result, activeResult, inactiveResult] = await Promise.all([
+          listEmployees({
+            sortBy: 'createdAt',
+            order: 'desc',
+            page,
+            limit: pageSize,
+            ...(statusFilter !== 'all' ? { status: statusFilter } : {}),
+            ...sharedFilters,
+          }),
+          listEmployees({ page: 1, limit: 1, status: 'active', ...sharedFilters }),
+          listEmployees({ page: 1, limit: 1, status: 'inactive', ...sharedFilters }),
+        ]);
 
         setEmployees(result.items);
 
         const meta = result.meta;
-        setTotalRecords(meta?.total ?? result.items.length);
+        const currentTotal = meta?.total ?? result.items.length;
+        const activeTotal = activeResult.meta?.total ?? 0;
+        const inactiveTotal = inactiveResult.meta?.total ?? 0;
+
+        setTotalRecords(currentTotal);
         setTotalPages(Math.max(meta?.totalPages ?? 1, 1));
+        setStatusCounts({
+          all: activeTotal + inactiveTotal,
+          active: activeTotal,
+          inactive: inactiveTotal,
+        });
 
         if (meta?.page && meta.page !== page) {
           setPage(meta.page);
@@ -292,7 +310,7 @@ export default function EmployeePage() {
                 setPage(1);
               }}
             >
-              All
+              All ({statusCounts.all})
             </button>
             <button
               type="button"
@@ -306,7 +324,7 @@ export default function EmployeePage() {
                 setPage(1);
               }}
             >
-              Active
+              Active ({statusCounts.active})
             </button>
             <button
               type="button"
@@ -320,7 +338,7 @@ export default function EmployeePage() {
                 setPage(1);
               }}
             >
-              Inactive
+              Inactive ({statusCounts.inactive})
             </button>
           </div>
 
