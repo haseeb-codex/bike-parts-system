@@ -11,7 +11,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import {
   deleteEmployee,
@@ -75,6 +81,7 @@ function EmployeePage() {
   const [totalRecords, setTotalRecords] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [statusCounts, setStatusCounts] = useState({ all: 0, active: 0, inactive: 0 });
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
 
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -155,6 +162,18 @@ function EmployeePage() {
       setPage(totalPages);
     }
   }, [page, totalPages]);
+
+  useEffect(() => {
+    setSelectedEmployeeIds((prev) => {
+      if (prev.length === 0) {
+        return prev;
+      }
+
+      const visibleIds = new Set(employees.map((employee) => employee._id));
+      const next = prev.filter((id) => visibleIds.has(id));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [employees]);
 
   useEffect(() => {
     const state = location.state as { message?: string } | null;
@@ -402,6 +421,26 @@ function EmployeePage() {
             emptyMessage="No employee records found."
             rowKey={(employee) => employee._id}
             filters={filters}
+            rowSelection={{
+              selectedKeys: selectedEmployeeIds,
+              onSelectedKeysChange: (keys) => {
+                const deduped = Array.from(new Set(keys));
+                setSelectedEmployeeIds(deduped);
+              },
+            }}
+            selectionActions={
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 text-emerald-700 hover:bg-emerald-200/60 hover:text-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
+                onClick={() => setSelectedEmployeeIds([])}
+                title="Clear selection"
+                aria-label="Clear selection"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            }
             tableClassName="table-fixed"
             pagination={{
               page,

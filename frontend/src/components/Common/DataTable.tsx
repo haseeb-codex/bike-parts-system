@@ -1,8 +1,18 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import type { CheckedState } from '@radix-ui/react-checkbox';
+import { useMemo } from 'react';
 import type { ReactNode } from 'react';
+import { Check } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -31,6 +41,11 @@ export interface DataTablePagination {
   limitOptions?: number[];
 }
 
+export interface DataTableRowSelection {
+  selectedKeys: string[];
+  onSelectedKeysChange: (keys: string[]) => void;
+}
+
 interface DataTableProps<TData> {
   columns: DataTableColumn<TData>[];
   data: TData[];
@@ -42,8 +57,27 @@ interface DataTableProps<TData> {
   pagination?: DataTablePagination;
   rowActions?: (row: TData) => ReactNode;
   actionsHeader?: string;
+  rowSelection?: DataTableRowSelection;
+  selectionActions?: ReactNode;
   className?: string;
   tableClassName?: string;
+}
+
+interface TableCheckboxProps {
+  checked: CheckedState;
+  onChange: (checked: boolean) => void;
+  ariaLabel: string;
+}
+
+function TableCheckbox({ checked, onChange, ariaLabel }: TableCheckboxProps) {
+  return (
+    <Checkbox
+      checked={checked}
+      onCheckedChange={(value) => onChange(value === true)}
+      aria-label={ariaLabel}
+      className="border-slate-400 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=indeterminate]:border-emerald-500 data-[state=indeterminate]:bg-emerald-500"
+    />
+  );
 }
 
 export function DataTable<TData>({
@@ -57,11 +91,29 @@ export function DataTable<TData>({
   pagination,
   rowActions,
   actionsHeader = 'Actions',
+  rowSelection,
+  selectionActions,
   className,
   tableClassName,
 }: DataTableProps<TData>) {
   const hasActions = Boolean(rowActions);
-  const totalColumns = columns.length + (hasActions ? 1 : 0);
+  const hasRowSelection = Boolean(rowSelection);
+
+  const rowKeys = useMemo(
+    () => data.map((row, rowIndex) => (rowKey ? rowKey(row, rowIndex) : String(rowIndex))),
+    [data, rowKey]
+  );
+
+  const selectedKeySet = useMemo(
+    () => new Set(rowSelection?.selectedKeys ?? []),
+    [rowSelection?.selectedKeys]
+  );
+
+  const selectedVisibleCount = rowKeys.filter((key) => selectedKeySet.has(key)).length;
+  const isAllVisibleSelected = rowKeys.length > 0 && selectedVisibleCount === rowKeys.length;
+  const isPartiallySelected = selectedVisibleCount > 0 && selectedVisibleCount < rowKeys.length;
+
+  const totalColumns = columns.length + (hasActions ? 1 : 0) + (hasRowSelection ? 1 : 0);
 
   const rangeStart =
     pagination && pagination.total > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0;
@@ -71,10 +123,46 @@ export function DataTable<TData>({
     <div className={cn('w-full', className)}>
       {filters ? <div className="my-4 border-b px-4 pb-3">{filters}</div> : null}
 
+      {hasRowSelection && selectedKeySet.size > 0 ? (
+        <div className="mb-0 flex items-center justify-between bg-emerald-100 px-4 py-3 text-sm text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+          <span className="flex items-center gap-3 font-semibold">
+            <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-emerald-500 text-white">
+              <Check className="h-3 w-3" />
+            </span>
+            {selectedKeySet.size} selected
+          </span>
+          {selectionActions}
+        </div>
+      ) : null}
+
       <div className="w-full overflow-x-auto">
         <Table className={cn('min-w-[780px] border-collapse', tableClassName)}>
           <TableHeader>
             <TableRow>
+              {hasRowSelection ? (
+                <TableHead className="w-10 px-2 sm:px-3">
+                  <TableCheckbox
+                    checked={isAllVisibleSelected ? true : isPartiallySelected ? 'indeterminate' : false}
+                    onChange={(checked) => {
+                      if (!rowSelection) {
+                        return;
+                      }
+
+                      if (checked) {
+                        const merged = new Set([...rowSelection.selectedKeys, ...rowKeys]);
+                        rowSelection.onSelectedKeysChange(Array.from(merged));
+                        return;
+                      }
+
+                      const visibleSet = new Set(rowKeys);
+                      rowSelection.onSelectedKeysChange(
+                        rowSelection.selectedKeys.filter((key) => !visibleSet.has(key))
+                      );
+                    }}
+                    ariaLabel="Select all rows"
+                  />
+                </TableHead>
+              ) : null}
               {columns.map((column) => (
                 <TableHead
                   key={column.accessorKey}
@@ -90,25 +178,30 @@ export function DataTable<TData>({
           <TableBody>
             {loading
               ? Array.from({ length: loadingRows }).map((_, rowIndex) => (
-                <TableRow key={`skeleton-row-${rowIndex}`}>
-                  {columns.map((column) => (
-                    <TableCell
-                      key={`${column.accessorKey}-skeleton-${rowIndex}`}
-                      className="px-2 sm:px-3"
-                    >
-                      <Skeleton className="h-4 w-24" />
-                    </TableCell>
-                  ))}
-                  {hasActions ? (
-                    <TableCell className="px-2 sm:px-3">
-                      <div className="flex items-center gap-2">
-                        <Skeleton className="h-8 w-8" />
-                        <Skeleton className="h-8 w-8" />
-                      </div>
-                    </TableCell>
-                  ) : null}
-                </TableRow>
-              ))
+                  <TableRow key={`skeleton-row-${rowIndex}`}>
+                    {hasRowSelection ? (
+                      <TableCell className="px-2 sm:px-3">
+                        <Skeleton className="h-4 w-4 rounded-sm" />
+                      </TableCell>
+                    ) : null}
+                    {columns.map((column) => (
+                      <TableCell
+                        key={`${column.accessorKey}-skeleton-${rowIndex}`}
+                        className="px-2 sm:px-3"
+                      >
+                        <Skeleton className="h-4 w-24" />
+                      </TableCell>
+                    ))}
+                    {hasActions ? (
+                      <TableCell className="px-2 sm:px-3">
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="h-8 w-8" />
+                          <Skeleton className="h-8 w-8" />
+                        </div>
+                      </TableCell>
+                    ) : null}
+                  </TableRow>
+                ))
               : null}
 
             {!loading && data.length === 0 ? (
@@ -124,25 +217,47 @@ export function DataTable<TData>({
 
             {!loading
               ? data.map((row, rowIndex) => {
-                const key = rowKey ? rowKey(row, rowIndex) : String(rowIndex);
-                return (
-                  <TableRow key={key}>
-                    {columns.map((column) => (
-                      <TableCell
-                        key={`${column.accessorKey}-${key}`}
-                        className={cn('px-2 sm:px-3', column.cellClassName)}
-                      >
-                        {column.cell
-                          ? column.cell(row)
-                          : String((row as Record<string, unknown>)[column.accessorKey] ?? '-')}
-                      </TableCell>
-                    ))}
-                    {hasActions ? (
-                      <TableCell className="px-2 sm:px-3">{rowActions?.(row)}</TableCell>
-                    ) : null}
-                  </TableRow>
-                );
-              })
+                  const key = rowKeys[rowIndex];
+                  return (
+                    <TableRow key={key}>
+                      {hasRowSelection ? (
+                        <TableCell className="w-10 px-2 sm:px-3">
+                          <TableCheckbox
+                            checked={selectedKeySet.has(key)}
+                            onChange={(checked) => {
+                              if (!rowSelection) {
+                                return;
+                              }
+
+                              if (checked) {
+                                rowSelection.onSelectedKeysChange([...rowSelection.selectedKeys, key]);
+                                return;
+                              }
+
+                              rowSelection.onSelectedKeysChange(
+                                rowSelection.selectedKeys.filter((selectedKey) => selectedKey !== key)
+                              );
+                            }}
+                            ariaLabel="Select row"
+                          />
+                        </TableCell>
+                      ) : null}
+                      {columns.map((column) => (
+                        <TableCell
+                          key={`${column.accessorKey}-${key}`}
+                          className={cn('px-2 sm:px-3', column.cellClassName)}
+                        >
+                          {column.cell
+                            ? column.cell(row)
+                            : String((row as Record<string, unknown>)[column.accessorKey] ?? '-')}
+                        </TableCell>
+                      ))}
+                      {hasActions ? (
+                        <TableCell className="px-2 sm:px-3">{rowActions?.(row)}</TableCell>
+                      ) : null}
+                    </TableRow>
+                  );
+                })
               : null}
           </TableBody>
         </Table>

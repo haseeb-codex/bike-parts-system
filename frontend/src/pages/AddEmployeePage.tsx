@@ -9,7 +9,13 @@ import { z } from 'zod';
 
 import { DatePicker } from '@/components/ui/date-picker';
 import { PageShell } from '@/components/Layout/PageShell';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -273,10 +279,7 @@ export default function AddEmployeePage() {
                   control={control}
                   name="role"
                   render={({ field }) => (
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
+                    <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger className={inputClassName}>
                         <SelectValue placeholder="Select role" />
                       </SelectTrigger>
@@ -333,10 +336,7 @@ export default function AddEmployeePage() {
                   control={control}
                   name="status"
                   render={({ field }) => (
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
+                    <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger className={inputClassName}>
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
