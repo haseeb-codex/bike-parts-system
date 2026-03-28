@@ -73,28 +73,28 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
 
   return (
     <header className="sticky top-0 z-20 border-b border-border/70 bg-background/80 backdrop-blur-md">
-      <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-3">
-          <Button className="md:hidden" size="icon" variant="outline" onClick={onOpenSidebar}>
+      <div className="flex h-14 items-center justify-between gap-2 px-3 sm:h-16 sm:px-6 lg:px-8">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+          <Button className="h-9 w-9 md:hidden" size="icon" variant="outline" onClick={onOpenSidebar}>
             <Menu className="h-4 w-4" />
           </Button>
 
-          <div className="relative w-[220px] sm:w-[300px] lg:w-[380px]">
+          <div className="relative min-w-0 flex-1 max-w-[220px] sm:max-w-[300px] lg:max-w-[380px]">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
-              className="h-10 bg-card pl-9"
+              className="h-9 bg-card pl-9 sm:h-10"
               placeholder={t('common.search', 'Search...')}
             />
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <div className="relative" ref={languageMenuRef}>
             <button
               type="button"
               onClick={() => setLanguageMenuOpen((open) => !open)}
-              className="inline-flex h-10 min-w-10 items-center justify-center rounded-md border border-input bg-background px-2 text-base hover:bg-secondary"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background p-0 text-base hover:bg-secondary sm:h-10 sm:w-10"
               aria-label={t('common.language', 'Language')}
               title={t('common.language', 'Language')}
             >
@@ -145,6 +145,7 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
           <Button
             variant="outline"
             size="icon"
+            className="h-9 w-9 sm:h-10 sm:w-10"
             type="button"
             onClick={toggleTheme}
             aria-label={
@@ -165,9 +166,9 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
             <button
               type="button"
               onClick={() => setMenuOpen((open) => !open)}
-              className="flex items-center gap-3 rounded-full border border-border/80 bg-card px-2.5 py-1.5 hover:bg-secondary"
+              className="flex items-center gap-2 rounded-full border border-border/80 bg-card px-1.5 py-1 hover:bg-secondary sm:gap-3 sm:px-2.5 sm:py-1.5"
             >
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+              <span className="grid h-7 w-7 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground sm:h-8 sm:w-8 sm:text-sm">
                 {getInitials(user?.name)}
               </span>
               <span className={isRtl ? 'hidden text-right sm:block' : 'hidden text-left sm:block'}>

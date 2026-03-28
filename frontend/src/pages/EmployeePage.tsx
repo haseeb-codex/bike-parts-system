@@ -4,11 +4,12 @@ import { Pencil, Plus, RefreshCcw, Trash2, Users2 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import ConfirmDialog from '@/components/Common/ConfirmDialog';
+import { DataTable, type DataTableColumn } from '@/components/Common/DataTable';
 import { PageShell } from '@/components/Layout/PageShell';
 import { useI18n } from '@/i18n/LanguageProvider';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -55,7 +56,7 @@ function formatDate(locale: string, value: string): string {
 const inputClassName =
   'flex h-10 w-full rounded-md border border-input bg-card px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
-export default function EmployeePage() {
+function EmployeePage() {
   const { t, language } = useI18n();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -91,7 +92,6 @@ export default function EmployeePage() {
         }
 
         setLoading(true);
-
         setError(null);
 
         const sharedFilters = {
@@ -158,35 +158,6 @@ export default function EmployeePage() {
     }
   }, [page, totalPages]);
 
-  const pageNumbers = useMemo(() => {
-    if (totalPages <= 1) {
-      return [1];
-    }
-
-    if (totalPages <= 7) {
-      return Array.from({ length: totalPages }, (_, index) => index + 1);
-    }
-
-    const pages: Array<number | 'ellipsis-left' | 'ellipsis-right'> = [1];
-    const start = Math.max(2, page - 1);
-    const end = Math.min(totalPages - 1, page + 1);
-
-    if (start > 2) {
-      pages.push('ellipsis-left');
-    }
-
-    for (let value = start; value <= end; value += 1) {
-      pages.push(value);
-    }
-
-    if (end < totalPages - 1) {
-      pages.push('ellipsis-right');
-    }
-
-    pages.push(totalPages);
-    return pages;
-  }, [page, totalPages]);
-
   useEffect(() => {
     const state = location.state as { message?: string } | null;
     if (!state?.message) {
@@ -221,11 +192,6 @@ export default function EmployeePage() {
   const isSuperAdmin = user?.role === 'super_admin';
   const canManage = user?.role === 'super_admin' || user?.role === 'admin';
 
-  const tableSkeletonRows = useMemo(() => Array.from({ length: pageSize }), [pageSize]);
-
-  const rangeStart = totalRecords === 0 ? 0 : (page - 1) * pageSize + 1;
-  const rangeEnd = Math.min(page * pageSize, totalRecords);
-
   const handleDelete = async (employee: EmployeeRecord) => {
     if (!canManage) {
       return;
@@ -245,6 +211,133 @@ export default function EmployeePage() {
       setDeletingId(null);
     }
   };
+
+  const columns = useMemo<DataTableColumn<EmployeeRecord>[]>(
+    () => [
+      {
+        header: 'Name',
+        accessorKey: 'name',
+        headerClassName: 'w-[27%]',
+        cell: (employee) => (
+          <div>
+            <div
+              className="max-w-[150px] truncate font-medium sm:max-w-[190px] lg:max-w-[230px]"
+              title={employee.name}
+            >
+              {employee.name}
+            </div>
+            <div
+              className="max-w-[150px] truncate text-xs text-muted-foreground sm:max-w-[190px] lg:max-w-[230px]"
+              title={employee.email}
+            >
+              {employee.email}
+            </div>
+          </div>
+        ),
+      },
+      {
+        header: 'Role',
+        accessorKey: 'role',
+        headerClassName: 'w-[12%]',
+        cell: (employee) => (employee.role || 'employee').replace('_', ' '),
+      },
+      {
+        header: 'Salary',
+        accessorKey: 'salary',
+        headerClassName: 'w-[13%]',
+        cell: (employee) => formatCurrency(locale, employee.salary),
+      },
+      {
+        header: 'Joining',
+        accessorKey: 'joiningDate',
+        headerClassName: 'w-[15%]',
+        cell: (employee) => formatDate(locale, employee.joiningDate),
+      },
+      {
+        header: 'Status',
+        accessorKey: 'status',
+        headerClassName: 'w-[11%]',
+        cell: (employee) => (
+          <Badge variant={employee.status === 'active' ? 'success' : 'warning'}>
+            {employee.status}
+          </Badge>
+        ),
+      },
+    ],
+    [locale]
+  );
+
+  const filters = (
+    <>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          className={`rounded-md px-3 py-1 text-sm font-medium ${statusFilter === 'all' ? 'bg-secondary text-foreground' : 'text-muted-foreground'
+            }`}
+          onClick={() => {
+            setStatusFilter('all');
+            setPage(1);
+          }}
+        >
+          All ({statusCounts.all})
+        </button>
+        <button
+          type="button"
+          className={`rounded-md px-3 py-1 text-sm font-medium ${statusFilter === 'active'
+              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+              : 'text-muted-foreground'
+            }`}
+          onClick={() => {
+            setStatusFilter('active');
+            setPage(1);
+          }}
+        >
+          Active ({statusCounts.active})
+        </button>
+        <button
+          type="button"
+          className={`rounded-md px-3 py-1 text-sm font-medium ${statusFilter === 'inactive'
+              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+              : 'text-muted-foreground'
+            }`}
+          onClick={() => {
+            setStatusFilter('inactive');
+            setPage(1);
+          }}
+        >
+          Inactive ({statusCounts.inactive})
+        </button>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <select
+          className={inputClassName}
+          value={roleFilter}
+          onChange={(event) => {
+            setRoleFilter(event.target.value as 'all' | EmployeeRole);
+            setPage(1);
+          }}
+        >
+          <option value="all">All roles</option>
+          {roles.map((role) => (
+            <option key={role.value} value={role.value}>
+              {role.label}
+            </option>
+          ))}
+        </select>
+
+        <Input
+          className="md:col-span-2"
+          value={searchText}
+          onChange={(event) => {
+            setSearchText(event.target.value);
+            setPage(1);
+          }}
+          placeholder="Search by name, email, role"
+        />
+      </div>
+    </>
+  );
 
   return (
     <PageShell
@@ -266,299 +359,78 @@ export default function EmployeePage() {
       ) : null}
 
       <Card>
-        <CardHeader>
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Users2 className="h-4 w-4" />
-                Employee Directory
-              </CardTitle>
-              <CardDescription>Search, filter, and manage employee records.</CardDescription>
+        <div className="flex flex-col gap-3 border-b p-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-base font-semibold">
+              <Users2 className="h-4 w-4" />
+              Employee Directory
             </div>
+            <p className="text-sm text-muted-foreground">Search, filter, and manage employee records.</p>
+          </div>
 
-            <div className="flex items-center gap-2 self-start lg:self-auto">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => void loadEmployees(true)}
-                disabled={refreshing}
-              >
-                <RefreshCcw className={refreshing ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
-                {refreshing
-                  ? t('common.refreshing', 'Refreshing...')
-                  : t('common.refresh', 'Refresh')}
+          <div className="flex items-center gap-2 self-start lg:self-auto">
+            <Button type="button" variant="outline" onClick={() => void loadEmployees(true)} disabled={refreshing}>
+              <RefreshCcw className={refreshing ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
+              {refreshing ? t('common.refreshing', 'Refreshing...') : t('common.refresh', 'Refresh')}
+            </Button>
+            {isSuperAdmin ? (
+              <Button type="button" onClick={() => navigate('/employees/add')}>
+                <Plus className="h-4 w-4" />
+                Add Employee
               </Button>
-              {isSuperAdmin ? (
-                <Button type="button" onClick={() => navigate('/employees/add')}>
-                  <Plus className="h-4 w-4" />
-                  Add Employee
+            ) : null}
+          </div>
+        </div>
+
+        <CardContent className="px-0 pt-0">
+          <DataTable
+            columns={columns}
+            data={employees}
+            loading={loading}
+            loadingRows={pageSize}
+            emptyMessage="No employee records found."
+            rowKey={(employee) => employee._id}
+            filters={filters}
+            tableClassName="table-fixed"
+            pagination={{
+              page,
+              limit: pageSize,
+              total: totalRecords,
+              onPageChange: setPage,
+              onLimitChange: (limit) => {
+                setPageSize(limit);
+                setPage(1);
+              },
+              limitOptions: [5, 10, 20, 50],
+            }}
+            rowActions={(employee) => (
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!canManage}
+                  onClick={() => navigate(`/employees/add?edit=${employee._id}`)}
+                >
+                  <Pencil className="h-4 w-4" />
                 </Button>
-              ) : null}
-            </div>
-          </div>
-        </CardHeader>
-
-        <CardContent>
-          <div className="mb-4 flex flex-wrap items-center gap-2 border-b pb-3">
-            <button
-              type="button"
-              className={`rounded-md px-3 py-1 text-sm font-medium ${
-                statusFilter === 'all' ? 'bg-secondary text-foreground' : 'text-muted-foreground'
-              }`}
-              onClick={() => {
-                setStatusFilter('all');
-                setPage(1);
-              }}
-            >
-              All ({statusCounts.all})
-            </button>
-            <button
-              type="button"
-              className={`rounded-md px-3 py-1 text-sm font-medium ${
-                statusFilter === 'active'
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                  : 'text-muted-foreground'
-              }`}
-              onClick={() => {
-                setStatusFilter('active');
-                setPage(1);
-              }}
-            >
-              Active ({statusCounts.active})
-            </button>
-            <button
-              type="button"
-              className={`rounded-md px-3 py-1 text-sm font-medium ${
-                statusFilter === 'inactive'
-                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-                  : 'text-muted-foreground'
-              }`}
-              onClick={() => {
-                setStatusFilter('inactive');
-                setPage(1);
-              }}
-            >
-              Inactive ({statusCounts.inactive})
-            </button>
-          </div>
-
-          <div className="mb-4 grid gap-3 md:grid-cols-3">
-            <select
-              className={inputClassName}
-              value={roleFilter}
-              onChange={(event) => {
-                setRoleFilter(event.target.value as 'all' | EmployeeRole);
-                setPage(1);
-              }}
-            >
-              <option value="all">All roles</option>
-              {roles.map((role) => (
-                <option key={role.value} value={role.value}>
-                  {role.label}
-                </option>
-              ))}
-            </select>
-
-            <Input
-              className="md:col-span-2"
-              value={searchText}
-              onChange={(event) => {
-                setSearchText(event.target.value);
-                setPage(1);
-              }}
-              placeholder="Search by name, email, role"
-            />
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[780px] table-fixed border-collapse">
-              <colgroup>
-                <col className="w-[27%]" />
-                <col className="w-[12%]" />
-                <col className="w-[13%]" />
-                <col className="w-[15%]" />
-                <col className="w-[11%]" />
-                <col className="w-[22%]" />
-              </colgroup>
-              <thead>
-                <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="w-[27%] px-3 py-2 font-medium">Name</th>
-                  <th className="w-[12%] px-3 py-2 font-medium">Role</th>
-                  <th className="w-[13%] px-3 py-2 font-medium">Salary</th>
-                  <th className="w-[15%] px-3 py-2 font-medium">Joining</th>
-                  <th className="w-[11%] px-3 py-2 font-medium">Status</th>
-                  <th className="w-[22%] px-3 py-2 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  tableSkeletonRows.map((_, index) => (
-                    <tr key={`skeleton-${index}`} className="border-b text-sm last:border-b-0">
-                      <td className="align-middle px-3 py-3">
-                        <div className="h-4 w-40 animate-pulse rounded bg-muted" />
-                        <div className="mt-2 h-3 w-52 animate-pulse rounded bg-muted" />
-                      </td>
-                      <td className="align-middle px-3 py-3">
-                        <div className="h-4 w-20 animate-pulse rounded bg-muted" />
-                      </td>
-                      <td className="align-middle px-3 py-3">
-                        <div className="h-4 w-24 animate-pulse rounded bg-muted" />
-                      </td>
-                      <td className="align-middle px-3 py-3">
-                        <div className="h-4 w-28 animate-pulse rounded bg-muted" />
-                      </td>
-                      <td className="align-middle px-3 py-3">
-                        <div className="h-5 w-16 animate-pulse rounded bg-muted" />
-                      </td>
-                      <td className="align-middle px-3 py-3">
-                        <div className="flex gap-2">
-                          <div className="h-8 w-16 animate-pulse rounded bg-muted" />
-                          <div className="h-8 w-16 animate-pulse rounded bg-muted" />
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : employees.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-3 py-6 text-center text-sm text-muted-foreground">
-                      No employee records found.
-                    </td>
-                  </tr>
-                ) : (
-                  employees.map((employee) => (
-                    <tr key={employee._id} className="border-b text-sm last:border-b-0">
-                      <td className="align-middle px-3 py-3">
-                        <div
-                          className="max-w-[150px] truncate font-medium sm:max-w-[190px] lg:max-w-[230px]"
-                          title={employee.name}
-                        >
-                          {employee.name}
-                        </div>
-                        <div
-                          className="max-w-[150px] truncate text-xs text-muted-foreground sm:max-w-[190px] lg:max-w-[230px]"
-                          title={employee.email}
-                        >
-                          {employee.email}
-                        </div>
-                      </td>
-                      <td className="align-middle px-3 py-3">
-                        {(employee.role || 'employee').replace('_', ' ')}
-                      </td>
-                      <td className="align-middle px-3 py-3">
-                        {formatCurrency(locale, employee.salary)}
-                      </td>
-                      <td className="align-middle px-3 py-3">
-                        {formatDate(locale, employee.joiningDate)}
-                      </td>
-                      <td className="align-middle px-3 py-3">
-                        <Badge variant={employee.status === 'active' ? 'success' : 'warning'}>
-                          {employee.status}
-                        </Badge>
-                      </td>
-                      <td className="align-middle px-3 py-3">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={!canManage}
-                            onClick={() => navigate(`/employees/add?edit=${employee._id}`)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            disabled={!canManage || deletingId === employee._id}
-                            title={
-                              canManage
-                                ? 'Delete employee'
-                                : 'Only admin or super admin is allowed to manage employee records'
-                            }
-                            onClick={() => setDeleteDialogEmployee(employee)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="mt-4 flex flex-col gap-3 border-t pt-4 md:flex-row md:items-center md:justify-between">
-            <div className="text-sm text-muted-foreground">
-              Showing {rangeStart}-{rangeEnd} of {totalRecords}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <label className="text-sm text-muted-foreground" htmlFor="employee-page-size">
-                Rows per page
-              </label>
-              <select
-                id="employee-page-size"
-                className="h-9 rounded-md border border-input bg-card px-2 text-sm"
-                value={pageSize}
-                onChange={(event) => {
-                  setPageSize(Number(event.target.value));
-                  setPage(1);
-                }}
-              >
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-              </select>
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={loading || page <= 1}
-                onClick={() => setPage((current) => Math.max(current - 1, 1))}
-              >
-                Previous
-              </Button>
-
-              <div className="flex items-center gap-1">
-                {pageNumbers.map((item, index) => {
-                  if (typeof item !== 'number') {
-                    return (
-                      <span key={`${item}-${index}`} className="px-2 text-sm text-muted-foreground">
-                        ...
-                      </span>
-                    );
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  disabled={!canManage || deletingId === employee._id}
+                  title={
+                    canManage
+                      ? 'Delete employee'
+                      : 'Only admin or super admin is allowed to manage employee records'
                   }
-
-                  return (
-                    <Button
-                      key={item}
-                      type="button"
-                      size="sm"
-                      variant={item === page ? 'default' : 'outline'}
-                      className="h-8 min-w-8 px-2"
-                      disabled={loading}
-                      onClick={() => setPage(item)}
-                    >
-                      {item}
-                    </Button>
-                  );
-                })}
+                  onClick={() => setDeleteDialogEmployee(employee)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={loading || page >= totalPages}
-                onClick={() => setPage((current) => Math.min(current + 1, totalPages))}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
+            )}
+          />
         </CardContent>
       </Card>
 
@@ -588,3 +460,6 @@ export default function EmployeePage() {
     </PageShell>
   );
 }
+
+export { EmployeePage };
+export default EmployeePage;
