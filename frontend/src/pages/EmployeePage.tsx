@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import {
   deleteEmployee,
@@ -52,9 +53,6 @@ function formatDate(locale: string, value: string): string {
     year: 'numeric',
   }).format(date);
 }
-
-const inputClassName =
-  'flex h-10 w-full rounded-md border border-input bg-card px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 function EmployeePage() {
   const { t, language } = useI18n();
@@ -272,9 +270,8 @@ function EmployeePage() {
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <button
           type="button"
-          className={`rounded-md px-3 py-1 text-sm font-medium ${
-            statusFilter === 'all' ? 'bg-secondary text-foreground' : 'text-muted-foreground'
-          }`}
+          className={`rounded-md px-3 py-1 text-sm font-medium ${statusFilter === 'all' ? 'bg-secondary text-foreground' : 'text-muted-foreground'
+            }`}
           onClick={() => {
             setStatusFilter('all');
             setPage(1);
@@ -284,11 +281,10 @@ function EmployeePage() {
         </button>
         <button
           type="button"
-          className={`rounded-md px-3 py-1 text-sm font-medium ${
-            statusFilter === 'active'
+          className={`rounded-md px-3 py-1 text-sm font-medium ${statusFilter === 'active'
               ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
               : 'text-muted-foreground'
-          }`}
+            }`}
           onClick={() => {
             setStatusFilter('active');
             setPage(1);
@@ -298,11 +294,10 @@ function EmployeePage() {
         </button>
         <button
           type="button"
-          className={`rounded-md px-3 py-1 text-sm font-medium ${
-            statusFilter === 'inactive'
+          className={`rounded-md px-3 py-1 text-sm font-medium ${statusFilter === 'inactive'
               ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
               : 'text-muted-foreground'
-          }`}
+            }`}
           onClick={() => {
             setStatusFilter('inactive');
             setPage(1);
@@ -313,21 +308,25 @@ function EmployeePage() {
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">
-        <select
-          className={inputClassName}
+        <Select
           value={roleFilter}
-          onChange={(event) => {
-            setRoleFilter(event.target.value as 'all' | EmployeeRole);
+          onValueChange={(value) => {
+            setRoleFilter(value as 'all' | EmployeeRole);
             setPage(1);
           }}
         >
-          <option value="all">All roles</option>
-          {roles.map((role) => (
-            <option key={role.value} value={role.value}>
-              {role.label}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger>
+            <SelectValue placeholder="All roles" />
+          </SelectTrigger>
+          <SelectContent position="popper" sideOffset={4} className="z-[9999]">
+            <SelectItem value="all">All roles</SelectItem>
+            {roles.map((role) => (
+              <SelectItem key={role.value} value={role.value}>
+                {role.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         <Input
           className="md:col-span-2"

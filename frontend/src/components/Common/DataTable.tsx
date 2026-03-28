@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -89,25 +90,25 @@ export function DataTable<TData>({
           <TableBody>
             {loading
               ? Array.from({ length: loadingRows }).map((_, rowIndex) => (
-                  <TableRow key={`skeleton-row-${rowIndex}`}>
-                    {columns.map((column) => (
-                      <TableCell
-                        key={`${column.accessorKey}-skeleton-${rowIndex}`}
-                        className="px-2 sm:px-3"
-                      >
-                        <Skeleton className="h-4 w-24" />
-                      </TableCell>
-                    ))}
-                    {hasActions ? (
-                      <TableCell className="px-2 sm:px-3">
-                        <div className="flex items-center gap-2">
-                          <Skeleton className="h-8 w-8" />
-                          <Skeleton className="h-8 w-8" />
-                        </div>
-                      </TableCell>
-                    ) : null}
-                  </TableRow>
-                ))
+                <TableRow key={`skeleton-row-${rowIndex}`}>
+                  {columns.map((column) => (
+                    <TableCell
+                      key={`${column.accessorKey}-skeleton-${rowIndex}`}
+                      className="px-2 sm:px-3"
+                    >
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                  ))}
+                  {hasActions ? (
+                    <TableCell className="px-2 sm:px-3">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-8 w-8" />
+                        <Skeleton className="h-8 w-8" />
+                      </div>
+                    </TableCell>
+                  ) : null}
+                </TableRow>
+              ))
               : null}
 
             {!loading && data.length === 0 ? (
@@ -123,25 +124,25 @@ export function DataTable<TData>({
 
             {!loading
               ? data.map((row, rowIndex) => {
-                  const key = rowKey ? rowKey(row, rowIndex) : String(rowIndex);
-                  return (
-                    <TableRow key={key}>
-                      {columns.map((column) => (
-                        <TableCell
-                          key={`${column.accessorKey}-${key}`}
-                          className={cn('px-2 sm:px-3', column.cellClassName)}
-                        >
-                          {column.cell
-                            ? column.cell(row)
-                            : String((row as Record<string, unknown>)[column.accessorKey] ?? '-')}
-                        </TableCell>
-                      ))}
-                      {hasActions ? (
-                        <TableCell className="px-2 sm:px-3">{rowActions?.(row)}</TableCell>
-                      ) : null}
-                    </TableRow>
-                  );
-                })
+                const key = rowKey ? rowKey(row, rowIndex) : String(rowIndex);
+                return (
+                  <TableRow key={key}>
+                    {columns.map((column) => (
+                      <TableCell
+                        key={`${column.accessorKey}-${key}`}
+                        className={cn('px-2 sm:px-3', column.cellClassName)}
+                      >
+                        {column.cell
+                          ? column.cell(row)
+                          : String((row as Record<string, unknown>)[column.accessorKey] ?? '-')}
+                      </TableCell>
+                    ))}
+                    {hasActions ? (
+                      <TableCell className="px-2 sm:px-3">{rowActions?.(row)}</TableCell>
+                    ) : null}
+                  </TableRow>
+                );
+              })
               : null}
           </TableBody>
         </Table>
@@ -152,18 +153,22 @@ export function DataTable<TData>({
           <div className="flex flex-wrap items-center justify-end gap-3 text-muted-foreground">
             <div className="flex items-center gap-1 text-xs sm:text-sm">
               <label htmlFor="datatable-limit">Rows per page:</label>
-              <select
+              <Select
                 id="datatable-limit"
-                className="h-8 rounded-md border border-input bg-card px-1.5 text-xs sm:h-9 sm:px-2 sm:text-sm"
-                value={pagination.limit}
-                onChange={(event) => pagination.onLimitChange(Number(event.target.value))}
+                value={String(pagination.limit)}
+                onValueChange={(value) => pagination.onLimitChange(Number(value))}
               >
-                {(pagination.limitOptions ?? [5, 10, 20, 50]).map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-8 w-[72px] px-2 text-xs sm:h-9 sm:text-sm">
+                  <SelectValue placeholder={String(pagination.limit)} />
+                </SelectTrigger>
+                <SelectContent>
+                  {(pagination.limitOptions ?? [5, 10, 20, 50]).map((option) => (
+                    <SelectItem key={option} value={String(option)}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="text-xs sm:text-sm">
