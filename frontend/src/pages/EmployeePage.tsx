@@ -272,8 +272,9 @@ function EmployeePage() {
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <button
           type="button"
-          className={`rounded-md px-3 py-1 text-sm font-medium ${statusFilter === 'all' ? 'bg-secondary text-foreground' : 'text-muted-foreground'
-            }`}
+          className={`rounded-md px-3 py-1 text-sm font-medium ${
+            statusFilter === 'all' ? 'bg-secondary text-foreground' : 'text-muted-foreground'
+          }`}
           onClick={() => {
             setStatusFilter('all');
             setPage(1);
@@ -283,10 +284,11 @@ function EmployeePage() {
         </button>
         <button
           type="button"
-          className={`rounded-md px-3 py-1 text-sm font-medium ${statusFilter === 'active'
+          className={`rounded-md px-3 py-1 text-sm font-medium ${
+            statusFilter === 'active'
               ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
               : 'text-muted-foreground'
-            }`}
+          }`}
           onClick={() => {
             setStatusFilter('active');
             setPage(1);
@@ -296,10 +298,11 @@ function EmployeePage() {
         </button>
         <button
           type="button"
-          className={`rounded-md px-3 py-1 text-sm font-medium ${statusFilter === 'inactive'
+          className={`rounded-md px-3 py-1 text-sm font-medium ${
+            statusFilter === 'inactive'
               ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
               : 'text-muted-foreground'
-            }`}
+          }`}
           onClick={() => {
             setStatusFilter('inactive');
             setPage(1);
@@ -365,13 +368,22 @@ function EmployeePage() {
               <Users2 className="h-4 w-4" />
               Employee Directory
             </div>
-            <p className="text-sm text-muted-foreground">Search, filter, and manage employee records.</p>
+            <p className="text-sm text-muted-foreground">
+              Search, filter, and manage employee records.
+            </p>
           </div>
 
           <div className="flex items-center gap-2 self-start lg:self-auto">
-            <Button type="button" variant="outline" onClick={() => void loadEmployees(true)} disabled={refreshing}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void loadEmployees(true)}
+              disabled={refreshing}
+            >
               <RefreshCcw className={refreshing ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
-              {refreshing ? t('common.refreshing', 'Refreshing...') : t('common.refresh', 'Refresh')}
+              {refreshing
+                ? t('common.refreshing', 'Refreshing...')
+                : t('common.refresh', 'Refresh')}
             </Button>
             {isSuperAdmin ? (
               <Button type="button" onClick={() => navigate('/employees/add')}>

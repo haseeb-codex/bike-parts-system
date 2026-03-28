@@ -81,7 +81,9 @@ export function Sidebar({ mobileOpen, collapsed, onToggleCollapse, onCloseMobile
         className={[
           'fixed inset-y-0 z-40 overflow-x-hidden bg-card/90 backdrop-blur-md transition-all duration-300',
           isRtl ? 'right-0 border-l border-border/80' : 'left-0 border-r border-border/80',
-          collapsed ? 'w-[85vw] max-w-xs md:w-20 md:max-w-none' : 'w-[85vw] max-w-xs md:w-72 md:max-w-none',
+          collapsed
+            ? 'w-[85vw] max-w-xs md:w-20 md:max-w-none'
+            : 'w-[85vw] max-w-xs md:w-72 md:max-w-none',
           mobileOpen ? 'translate-x-0' : isRtl ? 'translate-x-full' : '-translate-x-full',
           'md:translate-x-0',
         ].join(' ')}

@@ -75,7 +75,12 @@ export function Navbar({ onOpenSidebar }: NavbarProps) {
     <header className="sticky top-0 z-20 border-b border-border/70 bg-background/80 backdrop-blur-md">
       <div className="flex h-14 items-center justify-between gap-2 px-3 sm:h-16 sm:px-6 lg:px-8">
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-          <Button className="h-9 w-9 md:hidden" size="icon" variant="outline" onClick={onOpenSidebar}>
+          <Button
+            className="h-9 w-9 md:hidden"
+            size="icon"
+            variant="outline"
+            onClick={onOpenSidebar}
+          >
             <Menu className="h-4 w-4" />
           </Button>
 
