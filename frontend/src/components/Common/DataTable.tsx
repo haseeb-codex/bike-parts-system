@@ -1,8 +1,8 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { CheckedState } from '@radix-ui/react-checkbox';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
-import { Check } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -67,14 +67,16 @@ interface TableCheckboxProps {
   checked: CheckedState;
   onChange: (checked: boolean) => void;
   ariaLabel: string;
+  disabled?: boolean;
 }
 
-function TableCheckbox({ checked, onChange, ariaLabel }: TableCheckboxProps) {
+function TableCheckbox({ checked, onChange, ariaLabel, disabled = false }: TableCheckboxProps) {
   return (
     <Checkbox
       checked={checked}
       onCheckedChange={(value) => onChange(value === true)}
       aria-label={ariaLabel}
+      disabled={disabled}
       className="border-slate-400 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=indeterminate]:border-emerald-500 data-[state=indeterminate]:bg-emerald-500"
     />
   );
@@ -123,17 +125,29 @@ export function DataTable<TData>({
     <div className={cn('w-full', className)}>
       {filters ? <div className="my-4 border-b px-4 pb-3">{filters}</div> : null}
 
-      {hasRowSelection && selectedKeySet.size > 0 ? (
-        <div className="mb-0 flex items-center justify-between bg-emerald-100 px-4 py-3 text-sm text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
-          <span className="flex items-center gap-3 font-semibold">
-            <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-emerald-500 text-white">
-              <Check className="h-3 w-3" />
-            </span>
-            {selectedKeySet.size} selected
-          </span>
-          {selectionActions}
-        </div>
-      ) : null}
+      <AnimatePresence initial={false}>
+        {hasRowSelection && selectedKeySet.size > 0 ? (
+          <motion.div
+            key="datatable-selection-bar"
+            layout
+            initial={{ opacity: 0, height: 0, y: -6 }}
+            animate={{ opacity: 1, height: 'auto', y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -6 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="overflow-hidden"
+          >
+            <div className="mb-0 flex items-center justify-between bg-emerald-100 px-2 py-3 text-sm text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300 sm:px-3">
+              <span className="flex items-center font-semibold">
+                <span className="flex w-10 items-center px-2 sm:px-3">
+                  <TableCheckbox checked={true} onChange={() => undefined} ariaLabel="Selected rows" disabled />
+                </span>
+                <span>{selectedKeySet.size} selected</span>
+              </span>
+              {selectionActions}
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <div className="w-full overflow-x-auto">
         <Table className={cn('min-w-[780px] border-collapse', tableClassName)}>
