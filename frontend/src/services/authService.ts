@@ -19,6 +19,7 @@ interface MeData {
 
 const TOKEN_KEY = 'token';
 const USER_KEY = 'user';
+const REMEMBER_ME_KEY = 'rememberMe';
 
 function getStorage(rememberMe: boolean): Storage {
   return rememberMe ? localStorage : sessionStorage;
@@ -37,6 +38,17 @@ export function saveSession(user: AuthUser, token: string, rememberMe = true): v
   const storage = getStorage(rememberMe);
   storage.setItem(TOKEN_KEY, token);
   storage.setItem(USER_KEY, JSON.stringify(user));
+  localStorage.setItem(REMEMBER_ME_KEY, String(rememberMe));
+}
+
+export function getRememberMePreference(defaultValue = true): boolean {
+  const storedValue = localStorage.getItem(REMEMBER_ME_KEY);
+
+  if (storedValue === null) {
+    return defaultValue;
+  }
+
+  return storedValue === 'true';
 }
 
 export function clearSession(): void {
