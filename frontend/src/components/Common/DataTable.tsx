@@ -1,36 +1,35 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import type { CheckedState } from '@radix-ui/react-checkbox';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import {
+  createColumnHelper,
+  type ColumnDef,
+  useReactTable,
+  flexRender,
+  getCoreRowModel,
+  type RowSelectionState,
+} from '@tanstack/react-table';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
-  SelectContent,
   SelectItem,
-  SelectTrigger,
   SelectValue,
+  SelectContent,
+  SelectTrigger,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
+  TableRow,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-
-export interface DataTableColumn<TData> {
-  header: string;
-  accessorKey: string;
-  cell?: (row: TData) => ReactNode;
-  headerClassName?: string;
-  cellClassName?: string;
-}
 
 export interface DataTablePagination {
   page: number;
@@ -45,6 +44,19 @@ export interface DataTableRowSelection {
   selectedKeys: string[];
   onSelectedKeysChange: (keys: string[]) => void;
 }
+
+export interface DataTableColumn<TData> {
+  header: string;
+  accessorKey: string;
+  cell?: (row: TData) => ReactNode;
+  headerClassName?: string;
+  cellClassName?: string;
+}
+
+type DataTableColumnMeta = {
+  headerClassName?: string;
+  cellClassName?: string;
+};
 
 interface DataTableProps<TData> {
   columns: DataTableColumn<TData>[];
@@ -63,23 +75,26 @@ interface DataTableProps<TData> {
   tableClassName?: string;
 }
 
-interface TableCheckboxProps {
-  checked: CheckedState;
-  onChange: (checked: boolean) => void;
-  ariaLabel: string;
-  disabled?: boolean;
+function arraysEqual(a: string[], b: string[]) {
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  const aSorted = [...a].sort();
+  const bSorted = [...b].sort();
+
+  return aSorted.every((value, index) => value === bSorted[index]);
 }
 
-function TableCheckbox({ checked, onChange, ariaLabel, disabled = false }: TableCheckboxProps) {
-  return (
-    <Checkbox
-      checked={checked}
-      onCheckedChange={(value) => onChange(value === true)}
-      aria-label={ariaLabel}
-      disabled={disabled}
-      className="border-slate-400 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=indeterminate]:border-emerald-500 data-[state=indeterminate]:bg-emerald-500"
-    />
-  );
+function mapsEqual(a: RowSelectionState, b: RowSelectionState) {
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+
+  if (aKeys.length !== bKeys.length) {
+    return false;
+  }
+
+  return aKeys.every((key) => Boolean(a[key]) === Boolean(b[key]));
 }
 
 export function DataTable<TData>({
@@ -98,8 +113,8 @@ export function DataTable<TData>({
   className,
   tableClassName,
 }: DataTableProps<TData>) {
-  const hasActions = Boolean(rowActions);
   const hasRowSelection = Boolean(rowSelection);
+  const hasRowActions = Boolean(rowActions);
 
   const rowKeys = useMemo(
     () => data.map((row, rowIndex) => (rowKey ? rowKey(row, rowIndex) : String(rowIndex))),
@@ -111,11 +126,122 @@ export function DataTable<TData>({
     [rowSelection?.selectedKeys]
   );
 
-  const selectedVisibleCount = rowKeys.filter((key) => selectedKeySet.has(key)).length;
-  const isAllVisibleSelected = rowKeys.length > 0 && selectedVisibleCount === rowKeys.length;
-  const isPartiallySelected = selectedVisibleCount > 0 && selectedVisibleCount < rowKeys.length;
+  const [tableRowSelection, setTableRowSelection] = useState<RowSelectionState>({});
 
-  const totalColumns = columns.length + (hasActions ? 1 : 0) + (hasRowSelection ? 1 : 0);
+  useEffect(() => {
+    if (!hasRowSelection) {
+      return;
+    }
+
+    const nextSelection: RowSelectionState = {};
+
+    rowKeys.forEach((key) => {
+      if (selectedKeySet.has(key)) {
+        nextSelection[key] = true;
+      }
+    });
+
+    setTableRowSelection((prev) => (mapsEqual(prev, nextSelection) ? prev : nextSelection));
+  }, [hasRowSelection, rowKeys, selectedKeySet]);
+
+  const columnHelper = useMemo(() => createColumnHelper<TData>(), []);
+
+  const baseColumns = useMemo<ColumnDef<TData, unknown>[]>(
+    () =>
+      columns.map((column) =>
+        columnHelper.accessor((row) => (row as Record<string, unknown>)[column.accessorKey], {
+          id: column.accessorKey,
+          header: () => column.header,
+          cell: ({ row, getValue }) => {
+            if (column.cell) {
+              return column.cell(row.original);
+            }
+
+            const value = getValue();
+            return value == null ? '-' : String(value);
+          },
+          meta: {
+            headerClassName: column.headerClassName,
+            cellClassName: column.cellClassName,
+          },
+        })
+      ),
+    [columnHelper, columns]
+  );
+
+  const columnsWithFeatures = useMemo<ColumnDef<TData, unknown>[]>(() => {
+    const nextColumns = [...baseColumns];
+
+    if (hasRowActions) {
+      nextColumns.push(
+        columnHelper.display({
+          id: 'actions',
+          header: () => actionsHeader,
+          cell: ({ row }) => rowActions?.(row.original),
+        })
+      );
+    }
+
+    if (!hasRowSelection) {
+      return nextColumns;
+    }
+
+    const selectionColumn: ColumnDef<TData, unknown> = {
+      id: 'select',
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && 'indeterminate')
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(Boolean(value))}
+          aria-label="Select all rows"
+          className="border-slate-400 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=indeterminate]:border-emerald-500 data-[state=indeterminate]:bg-emerald-500"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(Boolean(value))}
+          aria-label="Select row"
+          className="border-slate-400 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=indeterminate]:border-emerald-500 data-[state=indeterminate]:bg-emerald-500"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+      meta: { headerClassName: 'w-10', cellClassName: 'w-10' },
+    };
+
+    return [selectionColumn, ...nextColumns];
+  }, [actionsHeader, baseColumns, columnHelper, hasRowActions, hasRowSelection, rowActions]);
+
+  const table = useReactTable({
+    data,
+    columns: columnsWithFeatures,
+    getCoreRowModel: getCoreRowModel(),
+    getRowId: (row, index) => (rowKey ? rowKey(row, index) : String(index)),
+    onRowSelectionChange: setTableRowSelection,
+    state: {
+      rowSelection: tableRowSelection,
+    },
+  });
+
+  useEffect(() => {
+    if (!rowSelection || !hasRowSelection) {
+      return;
+    }
+
+    const visibleSet = new Set(rowKeys);
+    const selectedVisible = rowKeys.filter((key) => Boolean(tableRowSelection[key]));
+    const preserved = rowSelection.selectedKeys.filter((key) => !visibleSet.has(key));
+    const next = Array.from(new Set([...preserved, ...selectedVisible]));
+
+    if (!arraysEqual(next, rowSelection.selectedKeys)) {
+      rowSelection.onSelectedKeysChange(next);
+    }
+  }, [hasRowSelection, rowKeys, rowSelection, tableRowSelection]);
+
+  const selectedCount = rowSelection?.selectedKeys.length ?? 0;
 
   const rangeStart =
     pagination && pagination.total > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0;
@@ -126,7 +252,7 @@ export function DataTable<TData>({
       {filters ? <div className="my-4 border-b px-4 pb-3">{filters}</div> : null}
 
       <AnimatePresence initial={false}>
-        {hasRowSelection && selectedKeySet.size > 0 ? (
+        {hasRowSelection && selectedCount > 0 ? (
           <motion.div
             key="datatable-selection-bar"
             layout
@@ -137,12 +263,7 @@ export function DataTable<TData>({
             className="overflow-hidden"
           >
             <div className="mb-0 flex items-center justify-between bg-emerald-100 px-2 py-3 text-sm text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300 sm:px-3">
-              <span className="flex items-center font-semibold">
-                <span className="flex w-10 items-center px-2 sm:px-3">
-                  <TableCheckbox checked={true} onChange={() => undefined} ariaLabel="Selected rows" disabled />
-                </span>
-                <span>{selectedKeySet.size} selected</span>
-              </span>
+              <span className="font-semibold">{`${selectedCount} selected`}</span>
               {selectionActions}
             </div>
           </motion.div>
@@ -152,76 +273,45 @@ export function DataTable<TData>({
       <div className="w-full overflow-x-auto">
         <Table className={cn('min-w-[780px] border-collapse', tableClassName)}>
           <TableHeader>
-            <TableRow>
-              {hasRowSelection ? (
-                <TableHead className="w-10 px-2 sm:px-3">
-                  <TableCheckbox
-                    checked={isAllVisibleSelected ? true : isPartiallySelected ? 'indeterminate' : false}
-                    onChange={(checked) => {
-                      if (!rowSelection) {
-                        return;
-                      }
-
-                      if (checked) {
-                        const merged = new Set([...rowSelection.selectedKeys, ...rowKeys]);
-                        rowSelection.onSelectedKeysChange(Array.from(merged));
-                        return;
-                      }
-
-                      const visibleSet = new Set(rowKeys);
-                      rowSelection.onSelectedKeysChange(
-                        rowSelection.selectedKeys.filter((key) => !visibleSet.has(key))
-                      );
-                    }}
-                    ariaLabel="Select all rows"
-                  />
-                </TableHead>
-              ) : null}
-              {columns.map((column) => (
-                <TableHead
-                  key={column.accessorKey}
-                  className={cn('px-2 sm:px-3', column.headerClassName)}
-                >
-                  {column.header}
-                </TableHead>
-              ))}
-              {hasActions ? <TableHead className="px-2 sm:px-3">{actionsHeader}</TableHead> : null}
-            </TableRow>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  const meta = header.column.columnDef.meta as DataTableColumnMeta | undefined;
+                  return (
+                    <TableHead
+                      key={header.id}
+                      className={cn('px-2 sm:px-3', meta?.headerClassName)}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  );
+                })}
+              </TableRow>
+            ))}
           </TableHeader>
 
           <TableBody>
             {loading
               ? Array.from({ length: loadingRows }).map((_, rowIndex) => (
                   <TableRow key={`skeleton-row-${rowIndex}`}>
-                    {hasRowSelection ? (
-                      <TableCell className="px-2 sm:px-3">
-                        <Skeleton className="h-4 w-4 rounded-sm" />
-                      </TableCell>
-                    ) : null}
-                    {columns.map((column) => (
+                    {Array.from({ length: columnsWithFeatures.length }).map((__, cellIndex) => (
                       <TableCell
-                        key={`${column.accessorKey}-skeleton-${rowIndex}`}
+                        key={`skeleton-cell-${rowIndex}-${cellIndex}`}
                         className="px-2 sm:px-3"
                       >
                         <Skeleton className="h-4 w-24" />
                       </TableCell>
                     ))}
-                    {hasActions ? (
-                      <TableCell className="px-2 sm:px-3">
-                        <div className="flex items-center gap-2">
-                          <Skeleton className="h-8 w-8" />
-                          <Skeleton className="h-8 w-8" />
-                        </div>
-                      </TableCell>
-                    ) : null}
                   </TableRow>
                 ))
               : null}
 
-            {!loading && data.length === 0 ? (
+            {!loading && table.getRowModel().rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={totalColumns}
+                  colSpan={columnsWithFeatures.length}
                   className="px-3 py-6 text-center text-sm text-muted-foreground"
                 >
                   {emptyMessage}
@@ -230,48 +320,21 @@ export function DataTable<TData>({
             ) : null}
 
             {!loading
-              ? data.map((row, rowIndex) => {
-                  const key = rowKeys[rowIndex];
-                  return (
-                    <TableRow key={key}>
-                      {hasRowSelection ? (
-                        <TableCell className="w-10 px-2 sm:px-3">
-                          <TableCheckbox
-                            checked={selectedKeySet.has(key)}
-                            onChange={(checked) => {
-                              if (!rowSelection) {
-                                return;
-                              }
-
-                              if (checked) {
-                                rowSelection.onSelectedKeysChange([...rowSelection.selectedKeys, key]);
-                                return;
-                              }
-
-                              rowSelection.onSelectedKeysChange(
-                                rowSelection.selectedKeys.filter((selectedKey) => selectedKey !== key)
-                              );
-                            }}
-                            ariaLabel="Select row"
-                          />
-                        </TableCell>
-                      ) : null}
-                      {columns.map((column) => (
+              ? table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id} data-state={row.getIsSelected() ? 'selected' : undefined}>
+                    {row.getVisibleCells().map((cell) => {
+                      const meta = cell.column.columnDef.meta as DataTableColumnMeta | undefined;
+                      return (
                         <TableCell
-                          key={`${column.accessorKey}-${key}`}
-                          className={cn('px-2 sm:px-3', column.cellClassName)}
+                          key={cell.id}
+                          className={cn('px-2 sm:px-3', meta?.cellClassName)}
                         >
-                          {column.cell
-                            ? column.cell(row)
-                            : String((row as Record<string, unknown>)[column.accessorKey] ?? '-')}
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </TableCell>
-                      ))}
-                      {hasActions ? (
-                        <TableCell className="px-2 sm:px-3">{rowActions?.(row)}</TableCell>
-                      ) : null}
-                    </TableRow>
-                  );
-                })
+                      );
+                    })}
+                  </TableRow>
+                ))
               : null}
           </TableBody>
         </Table>
@@ -283,11 +346,13 @@ export function DataTable<TData>({
             <div className="flex items-center gap-1 text-xs sm:text-sm">
               <label htmlFor="datatable-limit">Rows per page:</label>
               <Select
-                id="datatable-limit"
                 value={String(pagination.limit)}
                 onValueChange={(value) => pagination.onLimitChange(Number(value))}
               >
-                <SelectTrigger className="h-8 w-[72px] px-2 text-xs sm:h-9 sm:text-sm">
+                <SelectTrigger
+                  id="datatable-limit"
+                  className="h-8 w-[72px] px-2 text-xs sm:h-9 sm:text-sm"
+                >
                   <SelectValue placeholder={String(pagination.limit)} />
                 </SelectTrigger>
                 <SelectContent>
